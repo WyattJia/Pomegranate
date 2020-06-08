@@ -1,4 +1,7 @@
 use std::cmp;
+use std::cmp::Ordering;
+use std::fmt;
+use std::mem;
 
 use crate::node::Node;
 
@@ -26,10 +29,102 @@ impl <K, V> SkipList<K, V>
     }
 
     #[inline]
-    pub fn with_capacity(capacity: usize) -> Self {}
+    pub fn with_capacity(capacity: usize) -> Self {
+        let levels = cmp::max(1, (capacity as f64).log2().floor() as usize);
+        let levelgen = GeoLevelGenerator::new(levels, 1.0 / 2.0);
+        SkipList {
+            header: Box::new(SkipList::head(level_gen.total())),
+            length: 0,
+            level_gen:levelgen,
+        }
+
+    }
 
     pub fn insert(&mut self, key: K, value: V) -> Option<V> {
-        unsafe {}
+        unsafe {
+            let mut node: *mut SkipList<K, V> = mem::transmute_copy(&self.header);
+            let mut existing_node: Option<*mut SkipList<K, V>> = None;
+            let mut prev_nodes: Vec<*mut SkipList<K, V>> =
+                Vec::with_capacity(self.level_gen.total());
+
+            let mut level = self.level_gen.total();
+            while level > 0  {
+                level -= 1;
+                if let Some(existing_node) = existing_node {
+                    while let Some(next) = (*node).links[level]{
+                        if next == existing_node {
+                            prev_nodes.push(node);
+                            break;
+                        } else {
+                            node = next;
+                            continue
+                        }
+                    }
+                } else {
+                    while let Some(next) = (*node).links[level] {
+                        if let Some(ref next_key) = (*next).key {
+                            match next_key.cmp(&key) {
+                                Ordering::Less => {
+                                    node = next;
+                                    continue;
+                                }
+                                Ordering::Equal => {
+                                    existing_node = Some(next);
+                                    prev_nodes.push(node);
+                                    break;
+                                }
+                                Ordering::Greater => {
+                                    prev_nodes.push(node);
+                                    break
+                                }
+                            }
+                        }
+                    }
+                    if (*node).links[level].is_none() {
+                        prev_nodes.push(node);
+                        continue;
+                    }
+                }
+            }
+            if let Some(existing_node) = existing_node {
+                mem::replace(&mut (*existing_node).value, Some(value))
+            } else {
+                let mut new_node =
+                    Box::new(SkipList::new(key, value, self.level_gen.random()));
+                let new_node_ptr: *mut SkipList<K, V> = mem::transmute_copy(&new_node);
+
+                for (level, &prev_node) in prev_nodes.iter().rev().enumerate() {
+                    if level <= new_node.level {
+                        new_node.links[level] = (*prev_node).links[level];
+                        (*prev_node).links[level] = Some(new_node_ptr);
+
+                        if level == 0 {
+                            new_node.prev = Some(prev_node);
+                            if let Some(next) = new_node.links[level] {
+                                (*next).prev = Some(new_node_ptr);
+                            }
+                            new_node.links_len[level] = 1;
+                        } else {
+                            let len = self.
+                                link_length(prev_node, Some(new_node_ptr), level)
+                                .unwrap();
+                            new_node.links_len[level] = (*prev_node).links_len[level] - len + 1;
+                            (*prev_node).links_len(level) = len;
+                        }
+                    } else {
+                        (*prev_node).links_len[level] += 1;
+                    }
+                }
+
+                let prev_node = (*new_node_ptr).prev.unwrap();
+                let tmp = mem::replace(&mut (prev_node).next, Some(new_node));
+                if let Some(ref mut node) = (*prev_node).next {
+                    node.next = tmp;
+                }
+                self.length += 1;
+                None
+            }
+        }
     }
 
     pub fn delete_key(&mut self, key: K) -> Self {

@@ -2,6 +2,7 @@ use std::cmp;
 use std::cmp::Ordering;
 use std::fmt;
 use std::mem;
+use std::borrow:Borrow
 
 use crate::node::Node;
 
@@ -15,8 +16,8 @@ pub struct SkipList<K, V> {
 }
 
 impl <K, V> SkipList<K, V>
-    where
-        K: cmp::Ord,
+where
+K: cmp::Ord,
 {
     #[inline]
     pub fn new() -> Self {
@@ -126,6 +127,97 @@ impl <K, V> SkipList<K, V>
             }
         }
     }
+
+    pub fn delete<Q: ?Sized>(&mut self, key: &Q) -> Option<V>
+        where 
+        K: Borrow<Q>,
+        Q: Ord,
+        {
+            if self.length == 0 {
+                return None;
+
+            }
+
+            unsafe {
+                let mut node: *mut Node<K, V> =  mem::transmute_copy(&self.header);
+                let mut return_node: Option<*mut Node<K, V>> = None;
+                let mut prev_nodes: Vec<*mut Node<K, V>> = 
+                    Vec::with_capacity(self.level_gen.total());
+
+                let mut level = self.level_gen.total();
+                while level > 0 {
+                    level -=  1;
+                    if let Some(return_node) = return_node {
+                        while let Some(next) = (*node).links[level] {
+                            if next == return_node {
+                                prev_nodes.push(node);
+                                break;
+                            } else {
+                                node = next;
+                            }
+                        }
+                    } else {
+                        if (*node).links[level].is_none() {
+                            prev_nodes.push(node);
+                            continue;
+                        }
+                        while let Some(next) = (*node).links[level] {
+                            if let Some(ref next_key) = (*next).key {
+                                match next_key.borrow().cmp(key) {
+                                    Ordering::Less => {
+                                        node = next;
+                                        continue;
+                                    }
+                                    Ordering::Equal => {
+                                        return_node = Some(next);
+                                        prev_nodes.push(node);
+                                        break;
+                                    }
+                                    Ordering::Greater => {
+                                        prev_nodes.push(node);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if let Some(return_node) = return_node {
+                    for (level, &prev_node) in prev_nodes.iter().rev().enumerate() {
+                        if (*prev_node).links[level] == Some(return_node) {
+                            (*prev_node).links[level] = (*return_node).links[level];
+                            (*prev_node).links_len[level] += (*return_node).links_len[level] - 1;
+                        }else {
+                            (*prev_node).links_len[level] -= 1;
+                        }
+
+                    }
+
+                    if let Some(next_node) = (*return_node).links[0] {
+
+                        (*next_node).prev = (*return_node).prev;
+                    }
+                    self.length -= 1;
+                    Some(
+                        mem::replace(
+                            &mut (*(*return_node).prev.unwrap()).next,
+                            mem::replace(&mut (*return_node).next, None),
+                            )
+                        .unwrap()
+                        .into_inner()
+                        .unwrap()
+                        .1,
+                        )
+
+                }
+                else {
+                    None
+                }
+
+            }
+
+        }
 
     pub fn delete_key(&mut self, key: K) -> Self {
 

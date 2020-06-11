@@ -2,7 +2,7 @@ pub trait Run {
     // placeholder type
     type K;
     type V;
-    type Node<K, V>;
+    type Node;
 
     fn get_min(&mut self) -> Option<K>;
     fn get_max(&mut self) -> Option<K>;

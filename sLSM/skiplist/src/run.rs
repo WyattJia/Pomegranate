@@ -1,4 +1,7 @@
-pub trait Run {
+use crate::node::Node;
+
+
+pub trait Run<RHS=Node> {
     // placeholder type
     type K;
     type V;

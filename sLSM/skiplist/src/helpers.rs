@@ -1,7 +1,7 @@
 use rand::prelude::*;
 
 pub trait LevelGenerator {
-    fn total(&self) -> usize;
+    fn total(&mut self) -> usize;
 
     fn random(&mut self) -> usize;
 }
@@ -29,18 +29,18 @@ impl GeoLevelGenerator {
 }
 
 impl LevelGenerator for GeoLevelGenerator {
-    fn random(&mut self) -> usize {
-        let mut h = 0;
-        let mut x = self.p;
-        let f = 1.0 - self.rng.gen::<f64>();
-        while x > f && h + 1 < self.total {
-            h += 1;
-            x *= self.p
-        }
-        h
+    fn total(&mut self) -> usize {
+        *self.total
     }
 
-    fn total(&self) -> usize {
-        self.total
+    fn random(&mut self) -> usize {
+        let mut h = 0;
+        let mut x = &self.p;
+        let f = 1.0 - self.rng.gen::<f64>();
+        while x > f && &h + 1 < self.total {
+            h += 1;
+            x *= &self.p
+        }
+        h
     }
 }

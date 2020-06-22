@@ -6,18 +6,29 @@ pub struct Node<K, V> {
     key: Option<K>,
     value: Option<V>,
     max_level: usize,
-    forward: Option<*mut Node<K, V>>,
+    forwards: Vec<Option<*mut Node<K, V>>>
 }
 
 
 impl <K, V> Node<K, V> {
 
-    fn new(key: K, value: V) -> Self {
+
+    fn head(&mut max_level: usize) -> Self {
+        Node {
+            key: None,
+            value: None,
+
+            max_level,
+            forwards: iter::repeat(None).take(max_level).collect(),
+        }
+    }
+
+    fn new(key: K, value: V, &mut max_level: usize) -> Self {
         Node{
             key: Some(key),
             value: Some(value),
-            max_level: 0,
-            forward: None,
+            max_level: max_level,
+            forwards: iter::repeat(None).take(max_level + 1).collect()
         }
     }
 
@@ -47,6 +58,7 @@ where
         }
     }
 
+    // todo impl drop method.
     fn drop(&mut self){
         println!("Dropping Node...")
     }

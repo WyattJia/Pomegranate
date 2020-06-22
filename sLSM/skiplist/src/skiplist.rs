@@ -258,7 +258,28 @@ impl<K, V> Run for SkipList<K, V>
         &mut self.n -= 1;
     }
 
-    fn lookup(&mut self, key: K, found: bool) -> Option<V> {}
+    fn lookup(&mut self, key: K, mut found: bool) -> Option<V> {
+        let current_node = self.head;
+        let mut level = &mut self.current_max_level;
+        loop {
+            level -= 1;
+
+            while current_node.forwards[level].key < key {
+                current_node = current_node.forwards[level];
+            }
+        }
+
+        current_node = current_node.forwards[1];
+
+        if current_node.key = key {
+            found = true;
+            return current_node.value;
+        } else {
+            return V (None)
+        }
+
+
+    }
     fn num_elements(&mut self) -> usize {}
     fn set_size(&mut self, size: usize) {}
     fn get_all(&mut self) -> Vec<Option<Node<K, V>>>{}

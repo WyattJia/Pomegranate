@@ -1,43 +1,161 @@
 use std::cmp;
+use std::iter;
 use std::cmp::Ordering;
 use std::fmt;
 use std::mem;
+use rand::prelude::*;
 use std::borrow::Borrow;
 
-use crate::node::Node;
 use crate::run::Run;
-
 use crate::helpers::{GeoLevelGenerator, LevelGenerator};
 
 
+pub trait LevelGenerator {
+    fn total(&mut self) -> usize;
+
+    fn random(&mut self) -> usize;
+}
+
+pub struct GeoLevelGenerator {
+    total: usize,
+    p: f64,
+    rng: SmallRng,
+}
+
+impl GeoLevelGenerator {
+    pub fn new(total: usize, p: f64) -> Self{
+        if total == 0 {
+            panic!("total can not be zero.");
+        }
+        if p <= 0.0 || p >= 1.0 {
+            panic!("p value must in between in (0, 1)");
+        }
+        geo_level_gen {
+            total,
+            p,
+            rng: SmallRng::from_rng(thread_rng()).unwrap(),
+        }
+    }
+}
+
+impl LevelGenerator for GeoLevelGenerator {
+    fn total(&mut self) -> usize {
+        *self.total
+    }
+
+    fn random(&mut self) -> usize {
+        let mut h = 0;
+        let mut x = &self.p;
+        let f = 1.0 - self.rng.gen::<f64>();
+        while x > f && &h + 1 < self.total {
+            h += 1;
+            x *= &self.p
+        }
+        h
+    }
+}
+
+pub struct Node<K, V> {
+    key: Option<K>,
+    value: Option<V>,
+    max_level: usize,
+    forwards: Vec<Option<*mut Node<K, V>>>
+}
+
+
+impl <K, V> Node<K, V> {
+
+
+    fn head(&mut max_level: usize) -> Self {
+        Node {
+            key: None,
+            value: None,
+
+            max_level,
+            forwards: iter::repeat(None).take(max_level).collect(),
+        }
+    }
+
+    fn new(key: K, value: V, &mut max_level: usize) -> Self {
+        Node{
+            key: Some(key),
+            value: Some(value),
+            max_level: max_level,
+            forwards: iter::repeat(None).take(max_level + 1).collect()
+        }
+    }
+
+    fn get(self) -> Option<(K, V)> {
+        if self.key.is_some() {
+            Some((self.key.unwrap(), self.value.unwrap()))
+        } else {
+            None
+        }
+    }
+
+    fn is_header(&self) -> bool {
+        self.prev.is_none
+    }
+}
+
+impl <K, V> fmt::Display for Node<K, V>
+    where
+        K: fmt::Display,
+        V: fmt::Display,
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if let (&Some(ref k), &Some(ref v)) = (&self.key, &self.value) {
+            write!(f, "({}, {})", k, v)
+        } else {
+            Ok(())
+        }
+    }
+
+    // todo impl drop method.
+    fn drop(&mut self){
+        println!("Dropping Node...")
+    }
+}
+
+
 pub struct SkipList<K, V> {
-    pub header: Node<K, V>,
-    pub min: K,
-    pub max: K,
-    pub current_level: isize,
+    pub head: Option<*mut Node<K, V>>,
+    pub tail: Option<*mut Node<K, V>>,
+    pub current_max_level: isize,
     pub max_level: isize,
-    pub p: f64,
-    pub n: i64
+    pub min: Option<K>,
+    pub max: Option<K>,
+    pub min_key: K,
+    pub max_key: K,
+    pub n: i64,
+    pub max_size: usize,
+
 }
 
 impl<K, V> Run for SkipList<K, V>
-where
-    K: cmp::Ord,
+    where
+        K: cmp::Ord,
 {
     #[inline]
     fn new() -> Self {
+        K: Cmp::Ord;
         min_key = 0;
         max_key = 0;
+        let MAXLEVEL = 12;
         SkipList {
-            header: Box::new(Node::head),
-            min: (Node::new(min_key)),
-            p: 0.5,
+            head: Node::new(min_key),
+            tail: Node::new(max_key),
+            current_max_level: 1,
+            max_level: MAXLEVEL,
+            min: None,
+            max: None,
+            min_key: K,
+            max_key: K,
             n: 0,
-            current_level: 0,
-            max: (Node::new(max_key)),
-            max_level: 0
+            max_size: None,
         }
     }
+
 
     fn get_min(&mut self) -> Option<K>{
 
@@ -47,39 +165,61 @@ where
 
     fn insert_key(&mut self, key: K, value: V){
 
-        let mut node: *mut Node<K, V> = mem::transmute_copy(&self.header);
-        let mut existing_node: Option<*mut Node<K, V>> = None;
-        // let mut prev_nodes: Vec<*mut Node<K, V>> =
         if key > self.max {
             self.max = key;
         } else if key < self.min {
             self.min = key;
         }
+        let mut updated = iter::repeat(None).take(&mut self.max_level + 1).collect();
+        let mut current_node = self.head;
 
-        let mut updated = Vec::with_capacity(max_level + 1);
-        let mut current_node = self.header;
+        let mut level = &mut self.current_max_level;
 
-        let mut i = &self.current_level;
-        while i >= 0 {
-            // 循环体
-            i = i - 1;
-
+        loop {
+            level -= 1;
+            if level > 0  {
+                while (*current_node).forwards[level] < key {
+                    current_node = (*current_node).forward[level];
+                }
+                updated[level] = current_node;
+            }
         }
+
+        let mut current_node = current_node.forwards[1];
 
         let levels = cmp::max(1, (&self.max_level as f64).log2.floor() as usize);
         let level_gen = GeoLevelGenerator::new(levels, 1.0 / 2.0);
 
-        let current_node = current_node.forward[1];
-        if current_node.key == key {
-            current_node.value = value;
+
+        if *(current_node).key == key {
+            *(current_node).value = value;
         } else {
             let insert_level = level_gen.total();
-
-            if insert_level > &self.current_level && insert_level < &self.max_level - 1 {
-                let lv = &self.current_level + 1;
+            if insert_level > &mut self.current_max_level && insert_level < &mut self.max_level - 1 {
+                let mut lv = &mut self.current_max_level + 1;
+                loop {
+                    lv += 1;
+                    if lv <= insert_level {
+                        updated[lv] = &mut self.head
+                    }
+                    &mut self.current_max_level = insert_level;
+                }
             }
-        }
 
+            let current_node = Node::new(key, value);
+
+            let mut level = 1;
+            loop {
+                &mut level += 1;
+                if level <= &mut self.current_max_level {
+                   current_node.forwards[&mut level] = updated[&mut level].forwards[&mut level];
+
+                   updated[&mut level].forwards[&mut level] = current_node;
+
+                }
+            }
+            &mut self.n += 1;
+        }
     }
 
     fn delete_key(&mut self, key: K) {

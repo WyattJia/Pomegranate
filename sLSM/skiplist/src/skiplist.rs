@@ -111,9 +111,8 @@ impl <K, V> fmt::Display for Node<K, V>
         }
     }
 
-    // todo impl drop method.
     fn drop(&mut self){
-        println!("Dropping Node...")
+        self.forwards.drop()
     }
 }
 
@@ -224,6 +223,39 @@ impl<K, V> Run for SkipList<K, V>
 
     fn delete_key(&mut self, key: K) {
 
+        let mut updated = iter::repeat(None).take(&mut self.max_level + 1).collect();
+        let mut current_node = &mut self.head;
+
+        let mut level = &mut self.current_max_level;
+        loop {
+            level -= 1;
+            if level >= 1{
+                while current_node.forwards[level].key < key {
+                    *(current_node) = *(current_node).forwards[level];
+                }
+                updated[level] = current_node;
+            }
+        }
+        current_node = current_node.forwards[1];
+
+        if current_node.key == key {
+            let mut level = 1;
+            loop {
+                level += 1;
+                if level <= &mut self.current_max_level{
+                    if updated[&mut level].forwards[&mut level] != current_node{
+                        break;
+                    }
+                    updated[&mut level].forwards[&mut level] = current_node.forwards[&mut level];
+                }
+                drop(current_node);
+                while &mut self.current_max_level > 1 && &mut self.head.forward[&mut self.current_max_level] == None {
+                    &mut self.current_max_level -= 1;
+                }
+            }
+        }
+
+        &mut self.n -= 1;
     }
 
     fn lookup(&mut self, key: K, found: bool) -> Option<V> {}

@@ -80,7 +80,7 @@ impl <K, V> Node<K, V> {
         Node{
             key: Some(key),
             value: Some(value),
-            max_level: max_level,
+            max_level,
             forwards: iter::repeat(None).take(max_level + 1).collect()
         }
     }
@@ -140,12 +140,12 @@ impl<K, V> Run for SkipList<K, V>
         K: Cmp::Ord;
         min_key = 0;
         max_key = 0;
-        let MAXLEVEL = 12;
+        let maxlevel = 12;
         SkipList {
             head: Node::new(min_key),
             tail: Node::new(max_key),
             current_max_level: 1,
-            max_level: MAXLEVEL,
+            max_level: maxlevel,
             min: None,
             max: None,
             min_key: K,
@@ -271,11 +271,11 @@ impl<K, V> Run for SkipList<K, V>
 
         current_node = current_node.forwards[1];
 
-        if current_node.key = key {
+        return if current_node.key = key {
             found = true;
-            return current_node.value;
+            current_node.value
         } else {
-            return V (None)
+            V(None)
         }
 
 

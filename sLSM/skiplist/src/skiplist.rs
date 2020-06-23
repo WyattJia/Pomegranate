@@ -3,6 +3,7 @@ use std::iter;
 use std::cmp::Ordering;
 use std::fmt;
 use std::mem;
+use std::ops::Add;
 use rand::prelude::*;
 use std::borrow::Borrow;
 
@@ -115,6 +116,20 @@ impl <K, V> fmt::Display for Node<K, V>
         self.forwards.drop()
     }
 }
+
+pub struct KVpair<K, V> {
+    pub key: Option<K>,
+    pub value: Option<V>
+}
+
+impl <K, V> Eq for KVpair<K, V>
+where
+    K: cmp::Eq,
+    V: cmp::Eq,
+{
+}
+
+
 
 
 pub struct SkipList<K, V> {
@@ -282,8 +297,21 @@ impl<K, V> Run for SkipList<K, V>
     }
     fn num_elements(&mut self) -> usize {}
     fn set_size(&mut self, size: usize) {}
-    fn get_all(&mut self) -> Vec<Option<Node<K, V>>>{}
-    fn get_all_in_range(&mut self, key1: K, key2: K) -> Vec<Option<Node<K, V>>>{}
+    fn get_all(&mut self) -> Vec<Option<Node<K, V>>>{
+        // let mut v
+
+    }
+    fn get_all_in_range(&mut self, key1: K, key2: K) -> Vec<Option<Node<K, V>>>{
+
+    }
+
+    fn is_empty(&mut self) -> bool {
+        return &mut self.head.forwards[1] == &mut self.tail
+    }
+
+    fn elt_in (key: K) -> bool {
+        return self::lookup(key)
+    }
 }
 
 impl<K, V> Drop for SkipList<K, V>{

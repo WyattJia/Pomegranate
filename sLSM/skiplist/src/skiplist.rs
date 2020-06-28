@@ -4,7 +4,6 @@ use std::cmp::Ordering;
 use std::fmt;
 use std::mem;
 use std::ops::Add;
-use rand::prelude::*;
 use std::borrow::Borrow;
 
 use crate::run::Run;
@@ -122,6 +121,7 @@ pub struct KVpair<K, V> {
     pub value: Option<V>
 }
 
+// todo impl KVpair compare struct
 impl <K, V> Eq for KVpair<K, V>
 where
     K: cmp::Eq,
@@ -172,10 +172,12 @@ impl<K, V> Run for SkipList<K, V>
 
 
     fn get_min(&mut self) -> Option<K>{
-
+        return &mut self.min
     }
 
-    fn get_max(&mut self) -> Option<K> {}
+    fn get_max(&mut self) -> Option<K> {
+        return self.max
+    }
 
     fn insert_key(&mut self, key: K, value: V){
 
@@ -295,13 +297,50 @@ impl<K, V> Run for SkipList<K, V>
 
 
     }
-    fn num_elements(&mut self) -> usize {}
-    fn set_size(&mut self, size: usize) {}
+    fn num_elements(&mut self) -> usize {
+        return &mut self.n
+    }
+    fn set_size(&mut self, size: usize) {
+        *self.max_size = size;
+    }
     fn get_all(&mut self) -> Vec<Option<Node<K, V>>>{
-        // let mut v
+        let mut all: Vec<KVpair<K, V>> = Vec::new();
+
+        let node = *self.head.forwards[1];
+        
+        while node != &mut self.tail {
+            let kv = KVpair(node.key, node.value)
+
+            *all.push(kv);
+            
+            node = node.forwards[1];
+        }
+        return all 
 
     }
     fn get_all_in_range(&mut self, key1: K, key2: K) -> Vec<Option<Node<K, V>>>{
+
+        if key1 > self.max || key2 < self.min {
+            let null_vec: Vec<KVpair<K, V>> = Vec::new();
+            return null_vec;
+        }
+
+        let mut all: Vec<KVpair<K, V>> = Vec::new();
+
+        let mut node = self.head.forwards[1];
+
+        while node.key < key2 {
+            node = node.forwards[1];
+        }
+
+        while node.key < key2 {
+            let kv = KVpair<node.key, node.value>;
+            all.push(kv);
+            node = node.forwards[1];
+        }
+
+        return &mut all;
+
 
     }
 
@@ -309,7 +348,8 @@ impl<K, V> Run for SkipList<K, V>
         return &mut self.head.forwards[1] == &mut self.tail
     }
 
-    fn elt_in (key: K) -> bool {
+    // todo modify elt_in to inline method.
+    fn elt_in (&mut key: K) -> bool {
         return self::lookup(key)
     }
 }

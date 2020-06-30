@@ -1,146 +1,13 @@
 use std::cmp;
 use std::iter;
-use std::cmp::Ordering;
-use std::fmt;
-use std::mem;
-use std::ops::Add;
-use std::borrow::Borrow;
 
-use crate::run::Run;
-use crate::helpers::{GeoLevelGenerator, LevelGenerator};
+use crate::skiplist::GeoLevelGenerator;
+use crate::skiplist::LevelGenerator;
+use crate::skiplist::Run;
+use crate::skiplist::Node;
+use crate::skiplist::KVpair;
 
 
-pub trait LevelGenerator {
-    fn total(&mut self) -> usize;
-
-    fn random(&mut self) -> usize;
-}
-
-pub struct GeoLevelGenerator {
-    total: usize,
-    p: f64,
-    rng: SmallRng,
-}
-
-impl GeoLevelGenerator {
-    pub fn new(total: usize, p: f64) -> Self{
-        if total == 0 {
-            panic!("total can not be zero.");
-        }
-        if p <= 0.0 || p >= 1.0 {
-            panic!("p value must in between in (0, 1)");
-        }
-        geo_level_gen {
-            total,
-            p,
-            rng: SmallRng::from_rng(thread_rng()).unwrap(),
-        }
-    }
-}
-
-impl LevelGenerator for GeoLevelGenerator {
-    fn total(&mut self) -> usize {
-        *self.total
-    }
-
-    fn random(&mut self) -> usize {
-        let mut h = 0;
-        let mut x = &self.p;
-        let f = 1.0 - self.rng.gen::<f64>();
-        while x > f && &h + 1 < self.total {
-            h += 1;
-            x *= &self.p
-        }
-        h
-    }
-}
-
-pub struct Node<K, V> {
-    key: Option<K>,
-    value: Option<V>,
-    max_level: usize,
-    forwards: Vec<Option<*mut Node<K, V>>>
-}
-
-
-impl <K, V> Node<K, V> {
-
-
-    fn head(&mut max_level: usize) -> Self {
-        Node {
-            key: None,
-            value: None,
-
-            max_level,
-            forwards: iter::repeat(None).take(max_level).collect(),
-        }
-    }
-
-    fn new(key: K, value: V, &mut max_level: usize) -> Self {
-        Node{
-            key: Some(key),
-            value: Some(value),
-            max_level,
-            forwards: iter::repeat(None).take(max_level + 1).collect()
-        }
-    }
-
-    fn get(self) -> Option<(K, V)> {
-        if self.key.is_some() {
-            Some((self.key.unwrap(), self.value.unwrap()))
-        } else {
-            None
-        }
-    }
-
-    fn is_header(&self) -> bool {
-        self.prev.is_none
-    }
-}
-
-impl <K, V> fmt::Display for Node<K, V>
-where
-K: fmt::Display,
-V: fmt::Display,
-{
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if let (&Some(ref k), &Some(ref v)) = (&self.key, &self.value) {
-            write!(f, "({}, {})", k, v)
-        } else {
-            Ok(())
-        }
-    }
-
-    fn drop(&mut self){
-        self.forwards.drop()
-    }
-}
-
-pub struct KVpair<K, V> {
-    pub key: Option<K>,
-    pub value: Option<V>
-}
-
-// todo impl KVpair compare struct
-impl <K, V> cmp::Eq for KVpair<K, V>
-where
-K: cmp::Eq,
-V: cmp::Eq,
-{
-    fn eq(&self, other: Self) -> bool {
-        self.key == other.key &&  self.value && other.value
-    }
-}
-
-impl <K, V> cpm::PartialOrd for KVpair<K, V>
-where 
-K: cmp::PartialOrd,
-V: cmp::PartialOrd,
-{
-    fn gt(&self, other: Self) -> bool {
-        self.key > other.key
-    }
-}
 
 
 pub struct SkipList<K, V> {
@@ -345,7 +212,8 @@ K: cmp::Ord,
         }
 
         while node.key < key2 {
-            let kv = KVpair<node.key, node.value>;
+            let kv = KVpair { (*node).key.as_ref().unwrap(), \
+                              (*node).value.as_mut().unwrap(), };
             all.push(kv);
             node = node.forwards[1];
         }
@@ -370,5 +238,3 @@ impl<K, V> Drop for SkipList<K, V>{
         println!("Dropping...");
     }
 }
-
-

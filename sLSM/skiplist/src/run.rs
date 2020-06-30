@@ -1,5 +1,30 @@
-use crate::node::Node;
+use skiplist::Node
 
+pub struct KVpair<K, V> {
+    pub key: Option<K>,
+    pub value: Option<V>
+}
+
+// todo impl KVpair compare struct
+impl <K, V> cmp::Eq for KVpair<K, V>
+where
+K: cmp::Eq,
+V: cmp::Eq,
+{
+    fn eq(&self, other: Self) -> bool {
+        self.key == other.key &&  self.value && other.value
+    }
+}
+
+impl <K, V> cpm::PartialOrd for KVpair<K, V>
+where 
+K: cmp::PartialOrd,
+V: cmp::PartialOrd,
+{
+    fn gt(&self, other: Self) -> bool {
+        self.key > other.key
+    }
+}
 
 pub trait Run<RHS=Node> {
     // placeholder type

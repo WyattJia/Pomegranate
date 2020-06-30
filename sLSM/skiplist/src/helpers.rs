@@ -1,4 +1,4 @@
-use rand::prelude::*;
+use rand::prelude::SmallRng;
 
 pub trait LevelGenerator {
     fn total(&mut self) -> usize;

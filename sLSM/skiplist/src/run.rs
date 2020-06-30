@@ -1,4 +1,4 @@
-use skiplist::Node
+use crate::node::Node;
 
 pub struct KVpair<K, V> {
     pub key: Option<K>,
@@ -16,7 +16,7 @@ V: cmp::Eq,
     }
 }
 
-impl <K, V> cpm::PartialOrd for KVpair<K, V>
+impl <K, V> cmp::PartialOrd for KVpair<K, V>
 where 
 K: cmp::PartialOrd,
 V: cmp::PartialOrd,
@@ -32,6 +32,7 @@ pub trait Run<RHS=Node> {
     type V;
     type Node;
 
+    fn new() -> self;
     fn get_min(&mut self) -> Option<K>;
     fn get_max(&mut self) -> Option<K>;
     fn insert_key(&mut self, key: K, value: V);

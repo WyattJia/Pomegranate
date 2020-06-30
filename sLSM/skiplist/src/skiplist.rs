@@ -1,13 +1,11 @@
 use std::cmp;
 use std::iter;
 
-use crate::skiplist::GeoLevelGenerator;
-use crate::skiplist::LevelGenerator;
-use crate::skiplist::Run;
-use crate::skiplist::Node;
-use crate::skiplist::KVpair;
-
-
+use crate::run::Run;
+use crate::run::KVpair;
+use crate::helpers::LevelGenerator;
+use crate::helpers::GeoLevelGenerator;
+use crate::node::Node;
 
 
 pub struct SkipList<K, V> {
@@ -30,7 +28,7 @@ K: cmp::Ord,
 {
     #[inline]
     fn new() -> Self {
-        K: Cmp::Ord;
+        K: cmp::Ord;
            min_key = 0;
            max_key = 0;
            let maxlevel = 12;
@@ -187,9 +185,11 @@ K: cmp::Ord,
         let node = *self.head.forwards[1];
 
         while node != &mut self.tail {
-            let kv = KVpair(node.key, node.value)
+            let key = node.key;
+            let value = node.value;
+            let kv = KVpair{key, value};
 
-                *all.push(kv);
+                (*all).push(kv);
 
             node = node.forwards[1];
         }
@@ -212,9 +212,10 @@ K: cmp::Ord,
         }
 
         while node.key < key2 {
-            let kv = KVpair { (*node).key.as_ref().unwrap(), \
-                              (*node).value.as_mut().unwrap(), };
-            all.push(kv);
+            let key = node.key;
+            let value = node.value;
+            let kv = KVpair { key, value };
+            (*all).push(kv);
             node = node.forwards[1];
         }
 

@@ -99,9 +99,9 @@ impl <K, V> Node<K, V> {
 }
 
 impl <K, V> fmt::Display for Node<K, V>
-    where
-        K: fmt::Display,
-        V: fmt::Display,
+where
+K: fmt::Display,
+V: fmt::Display,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if let (&Some(ref k), &Some(ref v)) = (&self.key, &self.value) {
@@ -122,14 +122,25 @@ pub struct KVpair<K, V> {
 }
 
 // todo impl KVpair compare struct
-impl <K, V> Eq for KVpair<K, V>
+impl <K, V> cmp::Eq for KVpair<K, V>
 where
-    K: cmp::Eq,
-    V: cmp::Eq,
+K: cmp::Eq,
+V: cmp::Eq,
 {
+    fn eq(&self, other: Self) -> bool {
+        self.key == other.key &&  self.value && other.value
+    }
 }
 
-
+impl <K, V> cpm::PartialOrd for KVpair<K, V>
+where 
+K: cmp::PartialOrd,
+V: cmp::PartialOrd,
+{
+    fn gt(&self, other: Self) -> bool {
+        self.key > other.key
+    }
+}
 
 
 pub struct SkipList<K, V> {
@@ -147,27 +158,27 @@ pub struct SkipList<K, V> {
 }
 
 impl<K, V> Run for SkipList<K, V>
-    where
-        K: cmp::Ord,
+where
+K: cmp::Ord,
 {
     #[inline]
     fn new() -> Self {
         K: Cmp::Ord;
-        min_key = 0;
-        max_key = 0;
-        let maxlevel = 12;
-        SkipList {
-            head: Node::new(min_key),
-            tail: Node::new(max_key),
-            current_max_level: 1,
-            max_level: maxlevel,
-            min: None,
-            max: None,
-            min_key: K,
-            max_key: K,
-            n: 0,
-            max_size: None,
-        }
+           min_key = 0;
+           max_key = 0;
+           let maxlevel = 12;
+           SkipList {
+               head: Node::new(min_key),
+               tail: Node::new(max_key),
+               current_max_level: 1,
+               max_level: maxlevel,
+               min: None,
+               max: None,
+               min_key: K,
+               max_key: K,
+               n: 0,
+               max_size: None,
+           }
     }
 
 
@@ -228,9 +239,9 @@ impl<K, V> Run for SkipList<K, V>
             loop {
                 &mut level += 1;
                 if level <= &mut self.current_max_level {
-                   current_node.forwards[&mut level] = updated[&mut level].forwards[&mut level];
+                    current_node.forwards[&mut level] = updated[&mut level].forwards[&mut level];
 
-                   updated[&mut level].forwards[&mut level] = current_node;
+                    updated[&mut level].forwards[&mut level] = current_node;
 
                 }
             }
@@ -307,12 +318,12 @@ impl<K, V> Run for SkipList<K, V>
         let mut all: Vec<KVpair<K, V>> = Vec::new();
 
         let node = *self.head.forwards[1];
-        
+
         while node != &mut self.tail {
             let kv = KVpair(node.key, node.value)
 
-            *all.push(kv);
-            
+                *all.push(kv);
+
             node = node.forwards[1];
         }
         return all 

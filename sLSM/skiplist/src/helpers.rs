@@ -20,7 +20,7 @@ impl GeoLevelGenerator {
         if p <= 0.0 || p >= 1.0 {
             panic!("p value must in between in (0, 1)");
         }
-        geo_level_gen {
+        GeoLevelGenerator {
             total,
             p,
             rng: SmallRng::from_rng(thread_rng()).unwrap(),

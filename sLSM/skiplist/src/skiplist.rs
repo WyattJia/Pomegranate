@@ -28,19 +28,18 @@ K: cmp::Ord,
 {
     #[inline]
     fn new() -> Self {
-        K: cmp::Ord;
-           min_key = 0;
-           max_key = 0;
-           let maxlevel = 12;
+           let minKey = 0;
+           let maxKey = 0;
+           let maxLevel = 12;
            SkipList {
-               head: Node::new(min_key),
-               tail: Node::new(max_key),
+               head: Node::new(minKey),
+               tail: Node::new(maxKey),
                current_max_level: 1,
-               max_level: maxlevel,
+               max_level: maxLevel,
                min: None,
                max: None,
-               min_key: K,
-               max_key: K,
+               min_key: Some(minKey),
+               max_key: Some(maxKey),
                n: 0,
                max_size: None,
            }
@@ -168,7 +167,7 @@ K: cmp::Ord,
             found = true;
             current_node.value
         } else {
-            V(None)
+            None
         }
 
 
@@ -224,18 +223,28 @@ K: cmp::Ord,
 
     }
 
-    fn is_empty(&mut self) -> bool {
-        return &mut self.head.forwards[1] == &mut self.tail
-    }
+    
 
-    // todo modify elt_in to inline method.
-    fn elt_in (&mut key: K) -> bool {
-        return self::lookup(key)
-    }
+    
 }
 
 impl<K, V> Drop for SkipList<K, V>{
     fn drop(&mut self){
         println!("Dropping...");
+    }
+}
+
+impl<K, V> SkipList<K, V>
+where
+K: cmp::Ord,
+{
+    #[inline]
+    fn is_empty(&mut self) -> bool {
+        return &mut self.head.forwards[1] == &mut self.tail
+    }
+
+    #[inline]
+    fn elt_in (&mut self, key: K) -> bool {
+        return self.lookup(key)
     }
 }

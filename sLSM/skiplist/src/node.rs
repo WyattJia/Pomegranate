@@ -1,5 +1,7 @@
 use std::iter;
 use std::fmt;
+use std::ops;
+// use std::mem;
 
 
 pub struct Node<K, V> {
@@ -58,8 +60,14 @@ where
         }
     }
 
-    // todo impl drop method.
-    fn drop(&mut self){
-        println!("Dropping Node...")
+}
+
+impl<K, V> ops::Drop for Node<K, V> {
+    #[inline]
+    fn drop(&mut self) {
+        unsafe {
+            // let node: *mut Node<K, V> = mem::transmute_copy((s)))
+            println!("Dropping self...")
+        }
     }
 }

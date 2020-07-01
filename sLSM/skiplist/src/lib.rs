@@ -5,3 +5,5 @@ pub mod helpers;
 
 pub use crate::run::Run;
 pub use crate::skiplist::SkipList;
+
+extern crate rand;

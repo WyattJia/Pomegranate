@@ -22,7 +22,7 @@ pub struct SkipList<K, V> {
 
 }
 
-impl<K, V> Run for SkipList<K, V>
+impl<K, V> Run<K, V> for SkipList<K, V>
 where
 K: cmp::Ord,
 {

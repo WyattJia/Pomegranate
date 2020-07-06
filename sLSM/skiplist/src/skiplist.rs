@@ -61,10 +61,10 @@ K: cmp::Ord,
         } else if Some(key) < self.min {
             self.min = Some(key);
         }
-        let mut updated = iter::repeat(None).take(&mut self.max_level + 1).collect();
+        let mut updated = iter::repeat(None).take(self.max_level as usize + 1 ).collect();
         let mut current_node: *mut Node<K, V> = mem::transmute_copy(&self.head);
 
-        let mut level = &mut self.current_max_level;
+        let mut level = &mut self.current_max_level as isize;
 
         loop {
             level -= 1;

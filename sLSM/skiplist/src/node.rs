@@ -8,7 +8,7 @@ pub struct Node<K, V> {
     key: Option<K>,
     value: Option<V>,
     max_level: usize,
-    forwards: Vec<Option<*mut Node<K, V>>>
+    pub forwards: Vec<Option<*mut Node<K, V>>>
 }
 
 

@@ -9,17 +9,17 @@ use crate::node::Node;
 
 
 pub struct SkipList<K, V> {
-    pub head: Option<*mut Node<K, V>>,
-    pub tail: Option<*mut Node<K, V>>,
+
+    pub head: Option<Box<Node<K, V>>>,
+    pub tail: Option<Box<Node<K, V>>>,
     pub current_max_level: isize,
     pub max_level: isize,
     pub min: Option<K>,
     pub max: Option<K>,
-    pub min_key: K,
-    pub max_key: K,
+    pub min_key: Option<K>,
+    pub max_key: Option<K>,
     pub n: i64,
     pub max_size: usize,
-
 }
 
 impl<K, V> Run<K, V> for SkipList<K, V>
@@ -28,26 +28,25 @@ K: cmp::Ord,
 {
     #[inline]
     fn new() -> Self {
-           let minKey = 0;
-           let maxKey = 0;
            let maxLevel = 12;
+           let lg = GeoLevelGenerator::new(16, 1.0 / 2.0);
            SkipList {
-               head: Node::new(minKey),
-               tail: Node::new(maxKey),
+               head: Some(Box::new(Node::head(lg.total()))),
+               tail: Some(Box::new(Node::head(lg.total()))),
                current_max_level: 1,
                max_level: maxLevel,
                min: None,
                max: None,
-               min_key: Some(minKey),
-               max_key: Some(maxKey),
+               min_key: None,
+               max_key: None,
                n: 0,
-               max_size: None,
+               max_size: 0,
            }
     }
 
 
     fn get_min(&mut self) -> Option<K>{
-        return &mut self.min
+        return self.min
     }
 
     fn get_max(&mut self) -> Option<K> {

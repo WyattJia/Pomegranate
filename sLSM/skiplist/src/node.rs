@@ -15,7 +15,7 @@ pub struct Node<K, V> {
 impl <K, V> Node<K, V> {
 
 
-    pub fn head(&mut max_level: usize) -> Self {
+    pub fn head(max_level: usize) -> Self {
         Node {
             key: None,
             value: None,
@@ -25,7 +25,7 @@ impl <K, V> Node<K, V> {
         }
     }
 
-    pub fn new(key: K, value: V, &mut max_level: usize) -> Self {
+    pub fn new(key: K, value: V, max_level: usize) -> Self {
         Node{
             key: Some(key),
             value: Some(value),
@@ -52,7 +52,7 @@ where
     K: fmt::Display,
     V: fmt::Display,
 {
-    pub fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if let (&Some(ref k), &Some(ref v)) = (&self.key, &self.value) {
             write!(f, "({}, {})", k, v)
         } else {

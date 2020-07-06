@@ -56,11 +56,10 @@ K: cmp::Ord,
 
     fn insert_key(&mut self, key: K, value: V){
 
-        // let Some()
-        if key > self.max {
-            self.max = key;
-        } else if key < self.min {
-            self.min = key;
+        if Some(key) > self.max {
+            self.max = Some(key);
+        } else if Some(key) < self.min {
+            self.min = Some(key);
         }
         let mut updated = iter::repeat(None).take(&mut self.max_level + 1).collect();
         let mut current_node: *mut Node<K, V> = mem::transmute_copy(&self.head);

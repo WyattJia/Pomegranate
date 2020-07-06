@@ -13,18 +13,26 @@ where
 K: cmp::PartialEq,
 V: cmp::PartialEq,
 {
-    fn eq(&self, other: Self) -> bool {
-        self.key == other.key &&  self.value && other.value
+    #[inline]
+    fn eq(&self, other: &KVpair<K, V>) -> bool {
+        self.K == other.K &&  self.V && other.V
     }
 }
+
 
 impl <K, V> cmp::PartialOrd for KVpair<K, V>
 where 
 K: cmp::PartialOrd,
 V: cmp::PartialOrd,
 {
-    fn gt(&self, &other: Self) -> bool {
-        self.key > other.key
+
+    fn partial_cmp(&self, other: &KVpair<K, V>) -> Option<cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+
+    #[inline]
+    fn gt(&self, other: &KVpair<K, V>) -> bool {
+        self.K > other.K
     }
 }
 

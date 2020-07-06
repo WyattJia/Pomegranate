@@ -1,5 +1,6 @@
 use std::cmp;
 use std::iter;
+use std::mem;
 
 use crate::run::Run;
 use crate::run::KVpair;
@@ -55,13 +56,14 @@ K: cmp::Ord,
 
     fn insert_key(&mut self, key: K, value: V){
 
+        // let Some()
         if key > self.max {
             self.max = key;
         } else if key < self.min {
             self.min = key;
         }
         let mut updated = iter::repeat(None).take(&mut self.max_level + 1).collect();
-        let mut current_node = self.head;
+        let mut current_node: *mut Node<K, V> = mem::transmute_copy(&self.head);
 
         let mut level = &mut self.current_max_level;
 

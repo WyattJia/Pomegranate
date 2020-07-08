@@ -69,16 +69,16 @@ K: cmp::Ord,
         loop {
             level -= 1;
             if level > 0  {
-                while (*current_node).forwards[level] < key {
+                while let Some(key) > (*current_node).forwards[level] {
                     current_node = (*current_node).forward[level];
                 }
                 updated[level] = current_node;
             }
         }
 
-        let mut current_node = current_node.forwards[1];
+        let mut current_node = *(current_node).forwards[1];
 
-        let levels = cmp::max(1, (&self.max_level as f64).log2.floor() as usize);
+        let levels = cmp::max(1, (&self.max_level as f64).log2().floor() as usize);
         let level_gen = GeoLevelGenerator::new(levels, 1.0 / 2.0);
 
 
@@ -86,14 +86,15 @@ K: cmp::Ord,
             *(current_node).value = value;
         } else {
             let insert_level = level_gen.total();
-            if insert_level > &mut self.current_max_level && insert_level < &mut self.max_level - 1 {
-                let mut lv = &mut self.current_max_level + 1;
+            if insert_level > self.current_max_level as usize && insert_level < (self.max_level - 1) {
+                let mut lv = self.current_max_level + 1;
                 loop {
                     lv += 1;
                     if lv <= insert_level {
                         updated[lv] = &mut self.head
                     }
-                    &mut self.current_max_level = insert_level;
+                    // mem trans insert_level to self.current_max_level
+                    let &mut self.current_max_level = insert_level;
                 }
             }
 

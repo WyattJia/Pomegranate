@@ -56,62 +56,78 @@ K: cmp::Ord,
 
     fn insert_key(&mut self, key: K, value: V){
 
-        if Some(key) > self.max {
-            self.max = Some(key);
-        } else if Some(key) < self.min {
-            self.min = Some(key);
-        }
-        let mut updated = iter::repeat(None).take(self.max_level as usize + 1 ).collect();
-        let mut current_node: *mut Node<K, V> = mem::transmute_copy(&self.head);
+        unsafe {
+            let mut node: *mut Node<K, V> = mem::transmute_copy(&self.head);
+            let mut current_node: Option<*mut Node<K, V>> = None;
+            let mut prev_nodes: Vec<*mut Node<K, V>> = 
+            Vec::with_capacity(level_gen.total());
 
-        let mut level = &mut self.current_max_level as isize;
+            let mut lvl = level_gen.total();
 
-        loop {
-            level -= 1;
-            if level > 0  {
-                while let Some(key) > (*current_node).forwards[level] {
-                    current_node = (*current_node).forward[level];
-                }
-                updated[level] = current_node;
-            }
-        }
+            while lvl > 0 {
+              lvl -= 1;
 
-        let mut current_node = *(current_node).forwards[1];
-
-        let levels = cmp::max(1, (&self.max_level as f64).log2().floor() as usize);
-        let level_gen = GeoLevelGenerator::new(levels, 1.0 / 2.0);
-
-
-        if *(current_node).key == key {
-            *(current_node).value = value;
-        } else {
-            let insert_level = level_gen.total();
-            if insert_level > self.current_max_level as usize && insert_level < (self.max_level - 1) {
-                let mut lv = self.current_max_level + 1;
-                loop {
-                    lv += 1;
-                    if lv <= insert_level {
-                        updated[lv] = &mut self.head
-                    }
-                    // mem trans insert_level to self.current_max_level
-                    let &mut self.current_max_level = insert_level;
-                }
+              if let Some(current_node) = current_node{
+                  while 
+              }
             }
 
-            let current_node = Node::new(key, value);
-
-            let mut level = 1;
-            loop {
-                &mut level += 1;
-                if level <= &mut self.current_max_level {
-                    current_node.forwards[&mut level] = updated[&mut level].forwards[&mut level];
-
-                    updated[&mut level].forwards[&mut level] = current_node;
-
-                }
-            }
-            &mut self.n += 1;
         }
+        // if Some(key) > self.max {
+        //     self.max = Some(key);
+        // } else if Some(key) < self.min {
+        //     self.min = Some(key);
+        // }
+        // let mut updated = iter::repeat(None).take(self.max_level as usize + 1 ).collect();
+
+        // let mut level = &mut self.current_max_level as isize;
+
+        // loop {
+        //     level -= 1;
+        //     if level > 0  {
+        //         while let Some(key) > (*current_node).forwards[level] {
+        //             current_node = (*current_node).forward[level];
+        //         }
+        //         updated[level] = current_node;
+        //     }
+        // }
+
+        // let mut current_node = *(current_node).forwards[1];
+
+        // let levels = cmp::max(1, (&self.max_level as f64).log2().floor() as usize);
+        // let level_gen = GeoLevelGenerator::new(levels, 1.0 / 2.0);
+
+
+        // if *(current_node).key == key {
+        //     *(current_node).value = value;
+        // } else {
+        //     let insert_level = level_gen.total();
+        //     if insert_level > self.current_max_level as usize && insert_level < (self.max_level - 1) {
+        //         let mut lv = self.current_max_level + 1;
+        //         loop {
+        //             lv += 1;
+        //             if lv <= insert_level {
+        //                 updated[lv] = &mut self.head
+        //             }
+        //             // mem trans insert_level to self.current_max_level
+        //             let &mut self.current_max_level = insert_level;
+        //         }
+        //     }
+
+        //     let current_node = Node::new(key, value);
+
+        //     let mut level = 1;
+        //     loop {
+        //         &mut level += 1;
+        //         if level <= &mut self.current_max_level {
+        //             current_node.forwards[&mut level] = updated[&mut level].forwards[&mut level];
+
+        //             updated[&mut level].forwards[&mut level] = current_node;
+
+        //         }
+        //     }
+        //     &mut self.n += 1;
+        // }
     }
 
     fn delete_key(&mut self, key: K) {

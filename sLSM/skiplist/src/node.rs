@@ -12,6 +12,8 @@ pub struct Node<K, V> {
     // this vector must be of length `self.level + 1`.
     // links[0] stores a pointer to the same node as next.
     pub forwards: Vec<Option<*mut Node<K, V>>>
+    prev: Option<*mut Node<K, V>>,
+    
 }
 
 

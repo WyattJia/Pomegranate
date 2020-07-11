@@ -5,14 +5,16 @@ use std::ops;
 
 
 pub struct Node<K, V> {
-    key: Option<K>,
-    value: Option<V>,
-    max_level: usize,
+    pub key: Option<K>,
+    pub value: Option<V>,
+    pub max_level: usize,
     // forwards: vector of links to next node at the respective level.
     // this vector must be of length `self.level + 1`.
     // links[0] stores a pointer to the same node as next.
-    pub forwards: Vec<Option<*mut Node<K, V>>>
-    prev: Option<*mut Node<K, V>>,
+    pub forwards: Vec<Option<*mut Node<K, V>>>,
+    pub prev: Option<*mut Node<K, V>>,
+    pub next: Option<Box<Node<K, V>>>,
+    pub links_len: Vec<usize>,
     
 }
 
@@ -27,6 +29,7 @@ impl <K, V> Node<K, V> {
 
             max_level,
             forwards: iter::repeat(None).take(max_level).collect(),
+            links_len: iter::repeat(0).take(max_level).collect(),
         }
     }
 
@@ -35,7 +38,8 @@ impl <K, V> Node<K, V> {
             key: Some(key),
             value: Some(value),
             max_level: max_level,
-            forwards: iter::repeat(None).take(max_level + 1).collect()
+            forwards: iter::repeat(None).take(max_level + 1).collect(),
+            links_len: iter::repeat(0).take(max_level).collect(),
         }
     }
 

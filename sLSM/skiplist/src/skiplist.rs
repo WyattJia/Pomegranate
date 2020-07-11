@@ -1,6 +1,7 @@
 use std::cmp;
 use std::iter;
 use std::mem;
+use std::cmp::Ordering;
 
 use crate::run::Run;
 use crate::run::KVpair;
@@ -14,6 +15,7 @@ pub struct SkipList<K, V> {
     pub head: Option<Box<Node<K, V>>>,
     pub tail: Option<Box<Node<K, V>>>,
     pub current_max_level: isize,
+    // how high the node reaches, this should be euqal to be the vector length.
     pub max_level: isize,
     pub min: Option<K>,
     pub max: Option<K>,
@@ -21,6 +23,7 @@ pub struct SkipList<K, V> {
     pub max_key: Option<K>,
     pub n: i64,
     pub max_size: usize,
+    level_gen: GeoLevelGenerator,
 }
 
 impl<K, V> Run<K, V> for SkipList<K, V>
@@ -30,10 +33,10 @@ K: cmp::Ord,
     #[inline]
     fn new() -> Self {
            let maxLevel = 12;
-           let lg = GeoLevelGenerator::new(16, 1.0 / 2.0);
+           let level_gen = GeoLevelGenerator::new(16, 1.0 / 2.0);
            SkipList {
-               head: Some(Box::new(Node::head(lg.total()))),
-               tail: Some(Box::new(Node::head(lg.total()))),
+               head: Some(Box::new(Node::head(level_gen.total()))),
+               tail: Some(Box::new(Node::head(level_gen.total()))),
                current_max_level: 1,
                max_level: maxLevel,
                min: None,
@@ -42,6 +45,7 @@ K: cmp::Ord,
                max_key: None,
                n: 0,
                max_size: 0,
+               level_gen,
            }
     }
 
@@ -56,78 +60,101 @@ K: cmp::Ord,
 
     fn insert_key(&mut self, key: K, value: V){
 
+
         unsafe {
+            let mut lvl = self.level_gen.total();
             let mut node: *mut Node<K, V> = mem::transmute_copy(&self.head);
-            let mut current_node: Option<*mut Node<K, V>> = None;
-            let mut prev_nodes: Vec<*mut Node<K, V>> = 
-            Vec::with_capacity(level_gen.total());
+            let mut existing_node: Option<*mut Node<K, V>> = None;
+            let mut prev_nodes: Vec<*mut Node<K, V>> =
+                Vec::with_capacity(self.level_gen.total());
 
-            let mut lvl = level_gen.total();
-
+            
             while lvl > 0 {
-              lvl -= 1;
+                lvl -= 1;
+                // 递减遍历 level 变量
+                // 当 existing_node 变量不为空
+                if let Some(existing_node) = existing_node {
 
-              if let Some(current_node) = current_node{
-                  while 
-              }
+                    while let Some(next) = (*node).forwards[lvl] {
+                        if next == existing_node {
+                            prev_nodes.push(node);
+                            break;
+                        } else {
+                            node = next;
+                            continue;
+                        }
+                    }
+                } else {
+                    while let Some(next) = (*node).forwards[lvl] {
+                        if let Some(ref next_key) = (*next).key {
+                            match next_key.cmp(&key) {
+                                Ordering::Less => {
+                                    node = next;
+                                    continue;
+                                }
+                                Ordering::Equal => {
+                                    existing_node = Some(next);
+                                    prev_nodes.push(node);
+                                    break;
+                                }
+                                Ordering::Greater => {
+                                    prev_nodes.push(node);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    // We have not yet found the node, and there are no further
+                    // nodes at this level, so the return node (if present) is
+                    // between `node` and tail.
+                    if (*node).forwards[lvl].is_none() {
+                        prev_nodes.push(node);
+                        continue;
+                    }
+                }
             }
 
+            // At this point, `existing_node` contains a reference to the node
+            // with the same key if it was found, otherwise it is None.
+            if let Some(existing_node) = existing_node {
+                mem::replace(&mut (*existing_node).value, Some(value));
+            } else {
+                let mut new_node =
+                    Box::new(Node::new(key, value, self.level_gen.random()));
+                let new_node_ptr: *mut Node<K, V> = mem::transmute_copy(&new_node);
+
+                for (lvl, &prev_node) in prev_nodes.iter().rev().enumerate() {
+                    if lvl <= new_node.max_level {
+                        new_node.forwards[lvl] = (*prev_node).forwards[lvl];
+                        (*prev_node).forwards[lvl] = Some(new_node_ptr);
+
+                        if lvl == 0 {
+                            new_node.prev = Some(prev_node);
+                            if let Some(next) = new_node.forwards[lvl] {
+                                (*next).prev = Some(new_node_ptr);
+                            }
+                            new_node.links_len[lvl] = 1;
+                        } else {
+                            let length = self
+                                .link_length(prev_node, Some(new_node_ptr), lvl)
+                                .unwrap();
+                            new_node.links_len[lvl] = (*prev_node).links_len[lvl] - length + 1;
+                            (*prev_node).links_len[lvl] = length;
+                        }
+                    } else {
+                        (*prev_node).links_len[lvl] += 1;
+                    }
+                }
+
+                // Move the ownerships around, inserting the new node.
+                let prev_node = (*new_node_ptr).prev.unwrap();
+                let tmp = mem::replace(&mut (*prev_node).next, Some(new_node));
+                if let Some(ref mut node) = (*prev_node).next {
+                    node.next = tmp;
+                }
+                self.n += 1;
+            }
         }
-        // if Some(key) > self.max {
-        //     self.max = Some(key);
-        // } else if Some(key) < self.min {
-        //     self.min = Some(key);
-        // }
-        // let mut updated = iter::repeat(None).take(self.max_level as usize + 1 ).collect();
-
-        // let mut level = &mut self.current_max_level as isize;
-
-        // loop {
-        //     level -= 1;
-        //     if level > 0  {
-        //         while let Some(key) > (*current_node).forwards[level] {
-        //             current_node = (*current_node).forward[level];
-        //         }
-        //         updated[level] = current_node;
-        //     }
-        // }
-
-        // let mut current_node = *(current_node).forwards[1];
-
-        // let levels = cmp::max(1, (&self.max_level as f64).log2().floor() as usize);
-        // let level_gen = GeoLevelGenerator::new(levels, 1.0 / 2.0);
-
-
-        // if *(current_node).key == key {
-        //     *(current_node).value = value;
-        // } else {
-        //     let insert_level = level_gen.total();
-        //     if insert_level > self.current_max_level as usize && insert_level < (self.max_level - 1) {
-        //         let mut lv = self.current_max_level + 1;
-        //         loop {
-        //             lv += 1;
-        //             if lv <= insert_level {
-        //                 updated[lv] = &mut self.head
-        //             }
-        //             // mem trans insert_level to self.current_max_level
-        //             let &mut self.current_max_level = insert_level;
-        //         }
-        //     }
-
-        //     let current_node = Node::new(key, value);
-
-        //     let mut level = 1;
-        //     loop {
-        //         &mut level += 1;
-        //         if level <= &mut self.current_max_level {
-        //             current_node.forwards[&mut level] = updated[&mut level].forwards[&mut level];
-
-        //             updated[&mut level].forwards[&mut level] = current_node;
-
-        //         }
-        //     }
-        //     &mut self.n += 1;
-        // }
     }
 
     fn delete_key(&mut self, key: K) {
@@ -240,8 +267,44 @@ K: cmp::Ord,
 
     }
 
-    
-
+    fn link_length(&self, start: *mut Node<K, V>, end: Option<*mut Node<K, V>>, lvl: usize, ) -> Result<usize, bool> {
+        
+        unsafe {
+            let mut length = 0;
+            let mut node = start;
+            if lvl == 0 {
+                while Some(node) != end {
+                    length += 1;
+                    // Since the head node is not a node proper, the link
+                    // between it and the next node (on level 0) is actual 0
+                    // hence the offset here.
+                    if (*node).is_header() {
+                        length -= 1;
+                    }
+                    match (*node).forwards[lvl] {
+                        Some(ptr) => node = ptr,
+                        None => break,
+                    }
+                }
+            } else {
+                while Some(node) != end {
+                    length += (*node).links_len[lvl - 1];
+                    match (*node).forwards[lvl - 1] {
+                        Some(ptr) => node = ptr,
+                        None => break,
+                    }
+                }
+            }
+            // Check that we actually have calculated the length to the end node
+            // we want.
+            if let Some(end) = end {
+                if node != end {
+                    return Err(false);
+                }
+            }
+            Ok(length)
+        }
+    }
     
 }
 

@@ -49,4 +49,5 @@ pub trait Run<K, V> {
     fn set_size(&mut self, size: usize);
     fn get_all(&mut self) -> Vec<Option<Node<K, V>>>;
     fn get_all_in_range(&mut self, key1: K, key2: K) -> Vec<Option<Node<K,V>>>;
+    fn link_length(&self, start: *mut Node<K, V>, end: Option<*mut Node<K, V>>, lvl: usize, ) -> Result<usize, bool>; 
 } 

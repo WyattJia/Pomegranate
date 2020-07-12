@@ -1,6 +1,7 @@
 use std::cmp;
 use std::iter;
 use std::mem;
+use std::borrow::Borrow;
 use std::cmp::Ordering;
 
 use crate::run::Run;
@@ -157,42 +158,93 @@ K: cmp::Ord,
         }
     }
 
-    fn delete_key(&mut self, key: K) {
-
-        let mut updated = iter::repeat(None).take(&mut self.max_level + 1).collect();
-        let mut current_node = &mut self.head;
-
-        let mut level = &mut self.current_max_level;
-        loop {
-            level -= 1;
-            if level >= 1{
-                while current_node.forwards[level].key < key {
-                    *(current_node) = *(current_node).forwards[level];
-                }
-                updated[level] = current_node;
-            }
+    fn delete_key<Q: ?Sized>(&mut self, key: &Q) -> Option<V>
+    where 
+    K: Borrow<Q>,
+    Q: Ord,
+    {
+        if self.n == 0 {
+            return None;
         }
-        current_node = current_node.forwards[1];
 
-        if current_node.key == key {
-            let mut level = 1;
-            loop {
-                level += 1;
-                if level <= &mut self.current_max_level{
-                    if updated[&mut level].forwards[&mut level] != current_node{
-                        break;
+        unsafe {
+            let mut node: *mut Node<K, V> = mem::transmute_copy(&self.head);
+            let mut return_node: Option<*mut Node<K, V>> = None;
+            let mut prev_nodes: Vec<*mut Node<K, V>> =
+                Vec::with_capacity(self.level_gen.total());
+
+            let mut lvl = self.level_gen.total();
+            while lvl > 0 {
+                lvl -= 1;
+
+                if let Some(return_node) = return_node {
+                    while let Some(next) = (*node).forwards[lvl] {
+                        if next == return_node {
+                            prev_nodes.push(node);
+                            break;
+                        } else {
+                            node = next;
+                        }
                     }
-                    updated[&mut level].forwards[&mut level] = current_node.forwards[&mut level];
-                }
-                drop(current_node);
-                while &mut self.current_max_level > 1 && &mut self.head.forward[&mut self.current_max_level] == None {
-                    &mut self.current_max_level -= 1;
+                } else {
+                    if (*node).forwards[lvl].is_none() {
+                        prev_nodes.push(node);
+                        continue;
+                    }
+                    while let Some(next) = (*node).forwards[lvl] {
+                        if let Some(ref next_key) = (*next).key {
+                            match next_key.borrow().cmp(key) {
+                                Ordering::Less => {
+                                    node = next;
+                                    continue;
+                                }
+                                Ordering::Equal => {
+                                    return_node = Some(next);
+                                    prev_nodes.push(node);
+                                    break;
+                                }
+                                Ordering::Greater => {
+                                    prev_nodes.push(node);
+                                    break;
+                                }
+                            }
+                        }
+                    }
                 }
             }
-        }
 
-        &mut self.n -= 1;
+            // At this point, `return_node` contains a reference to the return
+            // node if it was found, otherwise it is None.
+            if let Some(return_node) = return_node {
+                for (lvl, &prev_node) in prev_nodes.iter().rev().enumerate() {
+                    if (*prev_node).forwards[lvl] == Some(return_node) {
+                        (*prev_node).forwards[lvl] = (*return_node).forwards[lvl];
+                        (*prev_node).links_len[lvl] += (*return_node).links_len[lvl] - 1;
+                    } else {
+                        (*prev_node).links_len[lvl] -= 1;
+                    }
+                }
+                if let Some(next_node) = (*return_node).forwards[0] {
+                    (*next_node).prev = (*return_node).prev;
+                }
+                self.n -= 1;
+                Some(
+                    mem::replace(
+                        &mut (*(*return_node).prev.unwrap()).next,
+                        mem::replace(&mut (*return_node).next, None),
+                    )
+                    .unwrap()
+                    .into_inner()
+                    .unwrap()
+                    .1,
+                )
+            } else {
+                None
+            }
+        }
     }
+
+
 
     fn lookup(&mut self, key: K, mut found: bool) -> Option<V> {
         let current_node = self.head;

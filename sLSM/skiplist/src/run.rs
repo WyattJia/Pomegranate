@@ -45,8 +45,8 @@ pub trait Run<K, V> {
     fn get_max(&mut self) -> Option<K>;
     fn insert_key(&mut self, key: K, value: V);
     fn delete_key<Q: ?Sized>(&mut self, key: &Q) -> Option<V> where K: Borrow<Q>, Q:Ord;
-    fn lookup(&mut self, key: K, found: bool) -> Option<V>;
-    fn num_elements(&mut self) -> usize;
+    fn lookup<Q: ?Sized>(&self, key: &Q, found: bool) -> Option<&V> where K: Borrow<Q>, Q:Ord;
+    fn num_elements(&self) -> i64;
     fn set_size(&mut self, size: usize);
     fn get_all(&mut self) -> Vec<Option<Node<K, V>>>;
     fn get_all_in_range(&mut self, key1: K, key2: K) -> Vec<Option<Node<K,V>>>;

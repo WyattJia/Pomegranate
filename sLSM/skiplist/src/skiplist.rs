@@ -72,8 +72,6 @@ K: cmp::Ord,
             
             while lvl > 0 {
                 lvl -= 1;
-                // 递减遍历 level 变量
-                // 当 existing_node 变量不为空
                 if let Some(existing_node) = existing_node {
 
                     while let Some(next) = (*node).forwards[lvl] {
@@ -105,9 +103,6 @@ K: cmp::Ord,
                             }
                         }
                     }
-                    // We have not yet found the node, and there are no further
-                    // nodes at this level, so the return node (if present) is
-                    // between `node` and tail.
                     if (*node).forwards[lvl].is_none() {
                         prev_nodes.push(node);
                         continue;
@@ -115,8 +110,6 @@ K: cmp::Ord,
                 }
             }
 
-            // At this point, `existing_node` contains a reference to the node
-            // with the same key if it was found, otherwise it is None.
             if let Some(existing_node) = existing_node {
                 mem::replace(&mut (*existing_node).value, Some(value));
             } else {
@@ -147,7 +140,6 @@ K: cmp::Ord,
                     }
                 }
 
-                // Move the ownerships around, inserting the new node.
                 let prev_node = (*new_node_ptr).prev.unwrap();
                 let tmp = mem::replace(&mut (*prev_node).next, Some(new_node));
                 if let Some(ref mut node) = (*prev_node).next {
@@ -213,8 +205,6 @@ K: cmp::Ord,
                 }
             }
 
-            // At this point, `return_node` contains a reference to the return
-            // node if it was found, otherwise it is None.
             if let Some(return_node) = return_node {
                 for (lvl, &prev_node) in prev_nodes.iter().rev().enumerate() {
                     if (*prev_node).forwards[lvl] == Some(return_node) {
@@ -246,38 +236,47 @@ K: cmp::Ord,
 
 
 
-    fn lookup(&mut self, key: K, mut found: bool) -> Option<V> {
-        let current_node = self.head;
-        let mut level = &mut self.current_max_level;
-        loop {
-            level -= 1;
+    fn lookup<Q: ?Sized>(&self, key: &Q, mut found: bool) -> Option<&V> 
+    where 
+        K: Borrow<Q>,
+        Q: Ord,
+    {
+        unsafe {
+            let mut node: *const Node<K, V> = mem::transmute_copy(&self.head);
+            let mut lvl = self.level_gen.total();
+            while lvl > 0 {
+                lvl -= 1;
 
-            while current_node.forwards[level].key < key {
-                current_node = current_node.forwards[level];
+                while let Some(next) = (*node).forwards[lvl] {
+                    if let Some(ref next_key) = (*next).key {
+                        match next_key.borrow().cmp(key) {
+                            Ordering::Less => {
+                                node = next;
+                                continue;
+                            }
+                            Ordering::Equal => {
+                                return (*next).value.as_ref();
+                            }
+                            Ordering::Greater => break,
+                        }
+                    }
+                }
             }
-        }
-
-        current_node = current_node.forwards[1];
-
-        return if current_node.key = key {
-            found = true;
-            current_node.value
-        } else {
             None
         }
-
-
     }
-    fn num_elements(&mut self) -> usize {
-        return &mut self.n
+
+
+    fn num_elements(&self) -> i64 {
+        return self.n
     }
     fn set_size(&mut self, size: usize) {
-        *self.max_size = size;
+        self.max_size = size;
     }
     fn get_all(&mut self) -> Vec<Option<Node<K, V>>>{
         let mut all: Vec<KVpair<K, V>> = Vec::new();
 
-        let node = *self.head.forwards[1];
+        let node = &mut self.head.forwards[1];
 
         while node != &mut self.tail {
             let key = node.key;
@@ -327,9 +326,6 @@ K: cmp::Ord,
             if lvl == 0 {
                 while Some(node) != end {
                     length += 1;
-                    // Since the head node is not a node proper, the link
-                    // between it and the next node (on level 0) is actual 0
-                    // hence the offset here.
                     if (*node).is_header() {
                         length -= 1;
                     }
@@ -347,8 +343,6 @@ K: cmp::Ord,
                     }
                 }
             }
-            // Check that we actually have calculated the length to the end node
-            // we want.
             if let Some(end) = end {
                 if node != end {
                     return Err(false);

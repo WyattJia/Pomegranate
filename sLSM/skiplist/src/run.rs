@@ -1,4 +1,5 @@
 use std::cmp;
+use std::borrow::Borrow;
 
 use crate::node::Node;
 
@@ -43,7 +44,7 @@ pub trait Run<K, V> {
     fn get_min(&mut self) -> Option<K>;
     fn get_max(&mut self) -> Option<K>;
     fn insert_key(&mut self, key: K, value: V);
-    fn delete_key<Q: ?Sized>(&mut self, key: &Q) -> Option<V>;
+    fn delete_key<Q: ?Sized>(&mut self, key: &Q) -> Option<V> where K: Borrow<Q>, Q:Ord;
     fn lookup(&mut self, key: K, found: bool) -> Option<V>;
     fn num_elements(&mut self) -> usize;
     fn set_size(&mut self, size: usize);

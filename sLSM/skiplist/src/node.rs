@@ -15,12 +15,10 @@ pub struct Node<K, V> {
     pub prev: Option<*mut Node<K, V>>,
     pub next: Option<Box<Node<K, V>>>,
     pub links_len: Vec<usize>,
-    
 }
 
 
 impl <K, V> Node<K, V> {
-
 
     pub fn head(max_level: usize) -> Self {
         Node {
@@ -54,12 +52,20 @@ impl <K, V> Node<K, V> {
     pub fn is_header(&self) -> bool {
         self.prev.is_none
     }
+
+    pub fn into_inner(self) -> Option<(K, V)> {
+        if self.key.is_some() {
+            Some((self.key.unwrap(), self.value.unwrap()))
+        } else {
+            None
+        }
+    }
 }
 
 impl <K, V> fmt::Display for Node<K, V>
 where
-    K: fmt::Display,
-    V: fmt::Display,
+K: fmt::Display,
+V: fmt::Display,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if let (&Some(ref k), &Some(ref v)) = (&self.key, &self.value) {

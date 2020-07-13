@@ -1,6 +1,7 @@
 use std::cmp;
 use std::iter;
 use std::mem;
+use std::marker::PhantomData;
 use std::ops::Bound;
 use std::borrow::Borrow;
 use std::cmp::Ordering;
@@ -283,7 +284,7 @@ K: cmp::Ord,
                                 continue;
                             }
                             Ordering::Equal => {
-                                &mut found = True
+                                // &mut found = true;
                                 return (*next).value.as_ref();
                             }
                             Ordering::Greater => break,
@@ -302,21 +303,36 @@ K: cmp::Ord,
     fn set_size(&mut self, size: usize) {
         self.max_size = size;
     }
-    fn get_all(&mut self) -> Vec<Option<Node<K, V>>>{
-        let mut all: Vec<KVpair<K, V>> = Vec::new();
+    fn get_all(&mut self) -> Vec<*mut Option<Node<K, V>>>{
+        let mut all: Vec<*mut Node<K, V>> = 
+                     Vec::with_capacity(self.level_gen.total());
 
-        let node = &mut self.head.forwards[1];
+        let mut node: *mut Node<K, V> = mem::transmute(&self.head);
 
-        while node != &mut self.tail {
-            let key = node.key;
-            let value = node.value;
-            let kv = KVpair{key, value};
+        let mut lvl = self.level_gen.total();
+        
+        while lvl > 0 {
+            lvl -= 1;
 
-                (*all).push(kv);
-
-            node = node.forwards[1];
+            while let Some(next) = (*node).forwards[lvl] {
+                all.push(node);
+                node = next;
+            }
         }
-        return all 
+
+        all
+        // let node = &mut self.head.forwards[1];
+
+        // while node != &mut self.tail {
+        //     let key = node.key;
+        //     let value = node.value;
+        //     let kv = KVpair{key, value};
+
+        //         (*all).push(kv);
+
+        //     node = node.forwards[1];
+        // }
+        // return all 
 
     }
     fn get_all_in_range(&mut self, key1: K, key2: K) -> Vec<Option<Node<K, V>>>{
@@ -471,6 +487,7 @@ K: cmp::Ord,
 
     #[inline]
     fn elt_in (&mut self, key: K) -> bool {
-        return self.lookup(key)
+        // cotain_key method
+        return self.lookup(key, false)
     }
 }

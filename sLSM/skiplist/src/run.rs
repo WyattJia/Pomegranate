@@ -1,5 +1,7 @@
 use std::cmp;
 use std::borrow::Borrow;
+use std::bound::Bound;
+use std::marker::PhantomData;
 
 use crate::node::Node;
 
@@ -16,7 +18,7 @@ V: cmp::PartialEq,
 {
     #[inline]
     fn eq(&self, other: &KVpair<K, V>) -> bool {
-        self.K == other.K &&  self.V && other.V
+        self.key == other.key &&  self.value && other.value
     }
 }
 
@@ -33,7 +35,7 @@ V: cmp::PartialOrd,
 
     #[inline]
     fn gt(&self, other: &KVpair<K, V>) -> bool {
-        self.K > other.K
+        self.key > other.key
     }
 }
 
@@ -46,7 +48,7 @@ pub struct Iter<'a, K: 'a, V: 'a> {
 }
 
 impl<'a, K, V> Iterator for Iter<'a, K, V> {
-    type item = (&'a K, &'a V);
+    type Item = (&'a K, &'a V);
 
     fn next(&mut self) -> Option<(&'a K, &'a V)>{
         unsafe {

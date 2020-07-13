@@ -24,7 +24,8 @@ impl <K, V> Node<K, V> {
         Node {
             key: None,
             value: None,
-
+            next: None,
+            prev: None,
             max_level,
             forwards: iter::repeat(None).take(max_level).collect(),
             links_len: iter::repeat(0).take(max_level).collect(),

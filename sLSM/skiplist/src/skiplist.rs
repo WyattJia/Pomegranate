@@ -6,6 +6,7 @@ use std::cmp::Ordering;
 
 use crate::run::Run;
 use crate::run::KVpair;
+use crate::run::Iter;
 use crate::helpers::LevelGenerator;
 use crate::helpers::GeoLevelGenerator;
 use crate::node::Node;
@@ -255,6 +256,7 @@ K: cmp::Ord,
                                 continue;
                             }
                             Ordering::Equal => {
+                                &mut found = True
                                 return (*next).value.as_ref();
                             }
                             Ordering::Greater => break,

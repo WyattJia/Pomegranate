@@ -37,8 +37,42 @@ V: cmp::PartialOrd,
     }
 }
 
+pub struct Iter<'a, K: 'a, V: 'a> {
+    start: *const Node<K, V>,
+    end: *const Node<K, V>,
+    size: usize,
+    _lifetime_k: PhantomData<&'a K>,
+    _lifetime_v: PhantomData<&'a V>,
+}
+
+impl<'a, K, V> Iterator for Iter<'a, K, V> {
+    type item = (&'a K, &'a V);
+
+    fn next(&mut self) -> Option<(&'a K, &'a V)>{
+        unsafe {
+            if self.start == self.end {
+                return None;
+            }
+            if let Some(next) = (*self.start).forwards[0] {
+                self.start = next;
+                if self.size > 0 {
+                    self.size -= 1;
+                }
+                return Some((
+                    (*self.start).key.as_ref().unwrap(),
+                    (*self.start).value.as_ref().unwrap(),
+                ))
+            }
+        }
+
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.size, Some(self.size))
+    }
+}
+
 pub trait Run<K, V> {
-    // placeholder type
 
     fn new() -> Self;
     fn get_min(&mut self) -> Option<K>;
@@ -50,5 +84,6 @@ pub trait Run<K, V> {
     fn set_size(&mut self, size: usize);
     fn get_all(&mut self) -> Vec<Option<Node<K, V>>>;
     fn get_all_in_range(&mut self, key1: K, key2: K) -> Vec<Option<Node<K,V>>>;
+    fn range<Q>(&self, min: Bound<&Q>, max: Bound<&Q>) -> Iter<K, V> where K: Borrow<Q>, Q: Ord;
     fn link_length(&self, start: *mut Node<K, V>, end: Option<*mut Node<K, V>>, lvl: usize, ) -> Result<usize, bool>; 
 } 

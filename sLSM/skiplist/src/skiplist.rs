@@ -1,6 +1,7 @@
 use std::cmp;
 use std::iter;
 use std::mem;
+use std::ops::Bound;
 use std::borrow::Borrow;
 use std::cmp::Ordering;
 
@@ -61,7 +62,6 @@ K: cmp::Ord,
     }
 
     fn insert_key(&mut self, key: K, value: V){
-
 
         unsafe {
             let mut lvl = self.level_gen.total();
@@ -235,6 +235,33 @@ K: cmp::Ord,
         }
     }
 
+    fn find_key<Q: ?Sized>(&self, key: &Q) -> *const Node<K, V>
+    where
+        K: Borrow<Q>,
+        Q: Ord,
+    {
+        unsafe {
+            let mut node: *const Node<K, V> = mem::transmute_copy(&self.head);
+
+            let mut lvl = self.level_gen.total();
+            while lvl > 0 {
+                lvl -= 1;
+
+                while let Some(next) = (*node).forwards[lvl] {
+                    if let Some(ref next_key) = (*next).key {
+                        match next_key.borrow().cmp(key) {
+                            Ordering::Less => node = next,
+                            Ordering::Equal => return next,
+                            Ordering::Greater => break,
+                        }
+                    } else {
+                        panic!("Encountered a value-less node.");
+                    }
+                }
+            }
+            node
+        }
+    }
 
 
     fn lookup<Q: ?Sized>(&self, key: &Q, mut found: bool) -> Option<&V> 
@@ -318,6 +345,77 @@ K: cmp::Ord,
         return &mut all;
 
 
+    }
+
+    fn range<Q>(&self, min: Bound<&Q>, max: Bound<&Q>) -> Iter<K, V>
+    where
+        K: Borrow<Q>,
+        Q: Ord,
+    {
+        unsafe {
+            let start = match min {
+                Bound::Included(min) => {
+                    let mut node = self.find_key(min);
+                    if let Some(ref key) = (*node).key {
+                        if key.borrow() == min {
+                            node = (*node).prev.unwrap();
+                        }
+                    }
+                    node
+                }
+                Bound::Excluded(min) => self.find_key(min),
+                Bound::Unbounded => mem::transmute_copy(&self.head),
+            };
+            let end = match max {
+                Bound::Included(max) => self.find_key(max),
+                Bound::Excluded(max) => {
+                    let mut node = self.find_key(max);
+                    if let Some(ref key) = (*node).key {
+                        if key.borrow() == max {
+                            node = (*node).prev.unwrap();
+                        }
+                    }
+                    node
+                }
+                Bound::Unbounded => self.get_last(),
+            };
+            match self.link_length(
+                start as *mut Node<K, V>,
+                Some(end as *mut Node<K, V>),
+                cmp::min((*start).max_level, (*end).max_level) + 1,
+            ) {
+                Err(_) => Iter {
+                    start,
+                    end: start,
+                    size: 0,
+                    _lifetime_k: PhantomData,
+                    _lifetime_v: PhantomData,
+                },
+                Ok(l) => Iter {
+                    start,
+                    end,
+                    size: l,
+                    _lifetime_k: PhantomData,
+                    _lifetime_v: PhantomData,
+                },
+            }
+        }
+    }
+
+    fn get_last(&self) -> *const Node<K, V> {
+        unsafe {
+            let mut node: *const Node<K, V> = mem::transmute_copy(&self.head);
+
+            let mut lvl = self.level_gen.total();
+            while lvl > 0 {
+                lvl -= 1;
+
+                while let Some(next) = (*node).forwards[lvl] {
+                    node = next;
+                }
+            }
+            node
+        }
     }
 
     fn link_length(&self, start: *mut Node<K, V>, end: Option<*mut Node<K, V>>, lvl: usize, ) -> Result<usize, bool> {

@@ -1,4 +1,5 @@
 use std::cmp;
+use std::cmp::Ordering;
 use std::borrow::Borrow;
 use std::ops::Bound;
 use std::marker::PhantomData;
@@ -10,7 +11,14 @@ pub struct KVpair<K, V> {
     pub value: Option<V>
 }
 
-// todo impl KVpair compare struct
+
+impl Ord for KVpair<K, V> {
+    #[inline]
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.key.cmp(&other.key)
+    }
+}
+
 impl <K, V> cmp::PartialEq for KVpair<K, V>
 where
 K: cmp::PartialEq,
@@ -22,13 +30,12 @@ V: cmp::PartialEq,
     }
 }
 
-
 impl <K, V> cmp::PartialOrd for KVpair<K, V>
-where 
+where
 K: cmp::PartialOrd,
 V: cmp::PartialOrd,
 {
-
+    #[inline]
     fn partial_cmp(&self, other: &KVpair<K, V>) -> Option<cmp::Ordering> {
         Some(self.cmp(other))
     }
@@ -61,10 +68,11 @@ impl<'a, K, V> Iterator for Iter<'a, K, V> {
                     self.size -= 1;
                 }
                 return Some((
-                    (*self.start).key.as_ref().unwrap(),
-                    (*self.start).value.as_ref().unwrap(),
-                ))
+                        (*self.start).key.as_ref().unwrap(),
+                        (*self.start).value.as_ref().unwrap(),
+                        ));
             }
+            None
         }
 
     }

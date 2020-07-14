@@ -37,6 +37,8 @@ impl <K, V> Node<K, V> {
             key: Some(key),
             value: Some(value),
             max_level: max_level,
+            next: None,
+            prev: None,
             forwards: iter::repeat(None).take(max_level + 1).collect(),
             links_len: iter::repeat(0).take(max_level).collect(),
         }
@@ -51,7 +53,7 @@ impl <K, V> Node<K, V> {
     }
 
     pub fn is_header(&self) -> bool {
-        self.prev.is_none
+        self.prev.is_none()
     }
 
     pub fn into_inner(self) -> Option<(K, V)> {

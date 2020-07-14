@@ -1,7 +1,7 @@
 use rand::prelude::*;
 
 pub trait LevelGenerator {
-    fn total(&mut self) -> usize;
+    fn total(&self) -> usize;
 
     fn random(&mut self) -> usize;
 }
@@ -28,19 +28,52 @@ impl GeoLevelGenerator {
     }
 }
 
-impl LevelGenerator for GeoLevelGenerator {
-    fn total(&mut self) -> usize {
-        *self.total
-    }
 
+impl LevelGenerator for GeoLevelGenerator {
     fn random(&mut self) -> usize {
         let mut h = 0;
-        let mut x = &self.p;
+        let mut x = self.p;
         let f = 1.0 - self.rng.gen::<f64>();
-        while x > f && &h + 1 < self.total {
+        while x > f && h + 1 < self.total {
             h += 1;
-            x *= &self.p
+            x *= self.p
         }
         h
     }
+
+    fn total(&self) -> usize {
+        self.total
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+
+    use super::GeoLevelGenerator;
+
+
+    #[test]
+    #[should_panic]
+    fn invalid_total() {
+        GeoLevelGenerator::new(0, 0.5);
+    }
+
+    #[test]
+    #[should_panic]
+    fn invalid_p_0() {
+        GeoLevelGenerator::new(1, 0.0);
+    }
+
+    #[test]
+    #[should_panic]
+    fn invalid_p_1() {
+        GeoLevelGenerator::new(1, 1.0);
+    }
+
+    #[test]
+    fn new() {
+        GeoLevelGenerator::new(1, 0.5);
+    }
+
 }

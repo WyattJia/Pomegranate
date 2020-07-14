@@ -1,6 +1,6 @@
 use std::cmp;
 use std::borrow::Borrow;
-use std::bound::Bound;
+use std::ops::Bound;
 use std::marker::PhantomData;
 
 use crate::node::Node;

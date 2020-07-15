@@ -468,6 +468,40 @@ K: cmp::Ord,
         }
     }
     
+    fn contains_key<Q: ?Sized>(&self, key: &Q) -> bool 
+    where
+        K: Borrow<Q>,
+        Q: Ord,
+    {
+        unsafe {
+            let mut node: *mut Node<K, V> = mem::transmute_copy(&self.head);
+
+            let mut lvl = self.level_gen.total();
+            while lvl > 0 {
+                lvl -= 1;
+
+                while let Some(next) = (*node).forwards[lvl] {
+                    if let Some(ref next_key) = (*next).key {
+                        match next_key.borrow().cmp(key) {
+                            Ordering::Less => {
+                                node = next;
+                                continue;
+                            }
+                            Ordering::Equal => {
+                                return true;
+                            }
+                            Ordering::Greater => {
+                                break;
+                            }
+                        }
+
+                    }
+                }
+            }
+            false
+        }   
+    }
+
 }
 
 impl<K, V> Drop for SkipList<K, V>{
@@ -487,7 +521,6 @@ K: cmp::Ord,
 
     #[inline]
     fn elt_in (&mut self, key: K) -> bool {
-        // cotain_key method
-        return self.lookup(key, false)
+        self.contains_key(&key)
     }
 }

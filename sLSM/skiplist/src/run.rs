@@ -11,11 +11,42 @@ pub struct KVpair<K, V> {
     pub value: Option<V>
 }
 
+// pub struct KVpairIter<'a, K: 'a, V: 'a> {
+//     start: *const KVpair<K, V>,
+//     end:   *const KVpair<K, V>,
+//     size:  usize,
+//     _lifetime_k: PhantomData<&'a K>,
+//     _lifetime_v: PhantomData<&'a V>,
+// }
+// 
+// impl<'a, K, V> Iterator for KVpairIter<'a, K, V> {
+//     type Item = (&'a K, &'a V);
+// 
+//     fn next(&mut self) -> Option<(&'a K, &'a V)> {
+//         unsafe {
+//             self.start == self.end {
+//                 return None;
+//             }
+//             if let Some(next) = (*self.start).links[0] {
+//                 self.start = next;
+//                 if self.size > 0 {
+//                     self.size -= 1;
+//                 }
+//                 return Some((
+//                     (*self.start).key.as_ref().unwrap(),
+//                     (*self.start).value.as_ref().unwrap(),
+//                 )); 
+//             }
+//             None
+//         }
+//     }
+// }
+
 
 impl Ord for KVpair<K, V> {
     #[inline]
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.key.cmp(&other.key)
+    fn cmp(&self, other: &KVpair<K, V>) -> Ordering {
+        self.iter().cmp(other.iter())
     }
 }
 
@@ -26,7 +57,7 @@ V: cmp::PartialEq,
 {
     #[inline]
     fn eq(&self, other: &KVpair<K, V>) -> bool {
-        self.key == other.key &&  self.value && other.value
+        self.key == other.key
     }
 }
 

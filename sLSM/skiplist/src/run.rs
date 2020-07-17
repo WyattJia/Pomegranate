@@ -1,4 +1,4 @@
-use std::cmp;
+use std::cmp::PartialEq;
 use std::cmp::Ordering;
 use std::borrow::Borrow;
 use std::ops::Bound;
@@ -6,77 +6,86 @@ use std::marker::PhantomData;
 
 use crate::node::Node;
 
+// Key-value pair struct start
 pub struct KVpair<K, V> {
     pub key: Option<K>,
     pub value: Option<V>
 }
 
-// pub struct KVpairIter<'a, K: 'a, V: 'a> {
-//     start: *const KVpair<K, V>,
-//     end:   *const KVpair<K, V>,
-//     size:  usize,
-//     _lifetime_k: PhantomData<&'a K>,
-//     _lifetime_v: PhantomData<&'a V>,
-// }
-// 
-// impl<'a, K, V> Iterator for KVpairIter<'a, K, V> {
-//     type Item = (&'a K, &'a V);
-// 
-//     fn next(&mut self) -> Option<(&'a K, &'a V)> {
-//         unsafe {
-//             self.start == self.end {
-//                 return None;
-//             }
-//             if let Some(next) = (*self.start).links[0] {
-//                 self.start = next;
-//                 if self.size > 0 {
-//                     self.size -= 1;
-//                 }
-//                 return Some((
-//                     (*self.start).key.as_ref().unwrap(),
-//                     (*self.start).value.as_ref().unwrap(),
-//                 )); 
-//             }
-//             None
-//         }
+// impl <K, V> Iterator for KVpair<K, V> {
+//     fn iter(){
+//         println!("impl iter.")
 //     }
 // }
 
 
-impl Ord for KVpair<K, V> {
+impl <K: Ord, V: Ord> Ord for KVpair<K, V> 
+{
     #[inline]
     fn cmp(&self, other: &KVpair<K, V>) -> Ordering {
-        self.iter().cmp(other.iter())
+        self.key.cmp(&other.key)
     }
 }
 
-impl <K, V> cmp::PartialEq for KVpair<K, V>
+// impl <K, V> Default for KVpair<K, V> 
+// where 
+// {
+// 
+// }
+
+impl <K, V> PartialEq for KVpair<K, V>
 where
-K: cmp::PartialEq,
-V: cmp::PartialEq,
+K: PartialEq,
+V: PartialEq,
 {
     #[inline]
     fn eq(&self, other: &KVpair<K, V>) -> bool {
-        self.key == other.key
+        self.key == other.key && self.value == other.value
+    }
+
+    #[inline]
+    fn ne(&self, other: &KVpair<K, V>) -> bool {
+        self.key != other.key && self.key != other.key
     }
 }
 
-impl <K, V> cmp::PartialOrd for KVpair<K, V>
+impl<K: Eq, V: Eq> Eq for KVpair<K, V> {}
+
+impl <K, V> PartialOrd for KVpair<K, V>
 where
-K: cmp::PartialOrd,
-V: cmp::PartialOrd,
+K: PartialOrd + PartialEq,
+V: PartialOrd + PartialEq,
 {
     #[inline]
-    fn partial_cmp(&self, other: &KVpair<K, V>) -> Option<cmp::Ordering> {
-        Some(self.cmp(other))
+    fn partial_cmp(&self, other: &KVpair<K, V>) -> Option<Ordering> {
+        self.key.partial_cmp(&other.key)
     }
 
     #[inline]
     fn gt(&self, other: &KVpair<K, V>) -> bool {
         self.key > other.key
     }
-}
 
+    #[inline]
+    fn ge(&self, other: &KVpair<K, V>) -> bool {
+        self.key >= other.key
+    }
+
+    #[inline]
+    fn lt(&self, other: &KVpair<K, V>) -> bool {
+       self.key < other.key
+    }
+
+    #[inline]
+    fn le(&self, other: &KVpair<K, V>) -> bool {
+        self.key <= other.key
+    }
+}
+// Key value pair struct end
+
+
+
+// Run Iterator 
 pub struct Iter<'a, K: 'a, V: 'a> {
     start: *const Node<K, V>,
     end: *const Node<K, V>,
@@ -112,6 +121,7 @@ impl<'a, K, V> Iterator for Iter<'a, K, V> {
         (self.size, Some(self.size))
     }
 }
+// Run Iterator end
 
 pub trait Run<K, V> {
 

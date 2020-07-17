@@ -1,5 +1,4 @@
 use std::cmp;
-use std::iter;
 use std::mem;
 use std::marker::PhantomData;
 use std::ops::Bound;

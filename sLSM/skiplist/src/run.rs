@@ -12,13 +12,6 @@ pub struct KVpair<K, V> {
     pub value: Option<V>
 }
 
-// impl <K, V> Iterator for KVpair<K, V> {
-//     fn iter(){
-//         println!("impl iter.")
-//     }
-// }
-
-
 impl <K: Ord, V: Ord> Ord for KVpair<K, V> 
 {
     #[inline]
@@ -26,12 +19,6 @@ impl <K: Ord, V: Ord> Ord for KVpair<K, V>
         self.key.cmp(&other.key)
     }
 }
-
-// impl <K, V> Default for KVpair<K, V> 
-// where 
-// {
-// 
-// }
 
 impl <K, V> PartialEq for KVpair<K, V>
 where
@@ -82,7 +69,6 @@ V: PartialOrd + PartialEq,
     }
 }
 // Key value pair struct end
-
 
 
 // Run Iterator 
@@ -140,4 +126,5 @@ pub trait Run<K, V> {
     fn range<Q>(&self, min: Bound<&Q>, max: Bound<&Q>) -> Iter<K, V> where K: Borrow<Q>, Q: Ord;
     fn link_length(&self, start: *mut Node<K, V>, end: Option<*mut Node<K, V>>, lvl: usize, ) -> Result<usize, bool>; 
     fn contains_key<Q: ?Sized>(&self, key:&Q) -> bool where K: Borrow<Q>, Q: Ord;
-} 
+}
+

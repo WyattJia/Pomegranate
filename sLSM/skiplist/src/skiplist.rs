@@ -302,8 +302,8 @@ K: cmp::Ord,
     fn set_size(&mut self, size: usize) {
         self.max_size = size;
     }
-    fn get_all(&mut self) -> Vec<*mut Option<Node<K, V>>>{
-        let mut all: Vec<*mut Node<K, V>> = 
+    fn get_all(&mut self) -> Vec<*mut Option<KVpair<K, V>>>{
+        let mut all: Vec<*mut KVpair<K, V>> = 
                      Vec::with_capacity(self.level_gen.total());
 
         let mut node: *mut Node<K, V> = mem::transmute(&self.head);
@@ -318,30 +318,20 @@ K: cmp::Ord,
                 node = next;
             }
         }
-
         all
-        // let node = &mut self.head.forwards[1];
-
-        // while node != &mut self.tail {
-        //     let key = node.key;
-        //     let value = node.value;
-        //     let kv = KVpair{key, value};
-
-        //         (*all).push(kv);
-
-        //     node = node.forwards[1];
-        // }
-        // return all 
-
     }
-    fn get_all_in_range(&mut self, key1: K, key2: K) -> Vec<Option<Node<K, V>>>{
+
+
+    fn get_all_in_range(&mut self, key1: K, key2: K) -> Vec<Option<KVpair<K, V>>>{
+
+        let mut all: Vec<*mut KVpair<K, V>> =
+                     Vec::with_capacity(self.level_gen.total());
 
         if key1 > self.max || key2 < self.min {
             let null_vec: Vec<KVpair<K, V>> = Vec::new();
             return null_vec;
         }
 
-        let mut all: Vec<KVpair<K, V>> = Vec::new();
 
         let mut node = self.head.forwards[1];
 
@@ -353,7 +343,7 @@ K: cmp::Ord,
             let key = node.key;
             let value = node.value;
             let kv = KVpair { key, value };
-            (*all).push(kv);
+            all.push(kv);
             node = node.forwards[1];
         }
 
@@ -514,8 +504,8 @@ where
 K: cmp::Ord,
 {
     #[inline]
-    fn is_empty(&mut self) -> bool {
-        return &mut self.head.forwards[1] == &mut self.tail
+    fn is_empty(&self) -> bool {
+        self.n == 0
     }
 
     #[inline]

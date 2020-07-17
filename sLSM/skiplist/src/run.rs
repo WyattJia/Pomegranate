@@ -121,8 +121,8 @@ pub trait Run<K, V> {
     fn num_elements(&self) -> i64;
     fn set_size(&mut self, size: usize);
     fn get_last(&self) -> *const Node<K, V>;
-    fn get_all(&mut self) -> Vec<Option<Node<K, V>>>;
-    fn get_all_in_range(&mut self, key1: K, key2: K) -> Vec<Option<Node<K,V>>>;
+    fn get_all(&mut self) -> Vec<Option<KVpair<K, V>>>;
+    fn get_all_in_range(&mut self, key1: K, key2: K) -> Vec<Option<KVpair<K,V>>>;
     fn range<Q>(&self, min: Bound<&Q>, max: Bound<&Q>) -> Iter<K, V> where K: Borrow<Q>, Q: Ord;
     fn link_length(&self, start: *mut Node<K, V>, end: Option<*mut Node<K, V>>, lvl: usize, ) -> Result<usize, bool>; 
     fn contains_key<Q: ?Sized>(&self, key:&Q) -> bool where K: Borrow<Q>, Q: Ord;

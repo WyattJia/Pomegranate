@@ -1,5 +1,6 @@
-use fnv::FnvHashMap;
+// use fnv_1a::fnv_1a;
 
-pub trait BloomFilter<key> {
+
+pub trait BloomFilter {
 
 }

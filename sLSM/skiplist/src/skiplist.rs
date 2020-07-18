@@ -332,17 +332,18 @@ K: cmp::Ord,
     fn get_all_in_range(&mut self, key1: K, key2: K) -> Vec<KVpair<K, V>>{
 
         unsafe {
-        let mut all: Vec<KVpair<K, V>> =
-                     Vec::with_capacity(self.level_gen.total());
+            let mut all: Vec<KVpair<K, V>> =
+                         Vec::with_capacity(self.level_gen.total());
 
-        for (k, v) in self.range(Included(&key1), Included(&key2)) {
+            for (k, v) in self.range(Included(&key1), Included(&key2)) {
 
-            let kv = KVpair{
-                key:   Some((*k).as_ref()),
-                value: Some((*v).as_ref()),
-            };
-            all.push(kv);
-        }
+
+                let kv = KVpair{
+                    key:   Some(*k),
+                    value: Some(*v),
+                };
+                all.push(kv);
+            }
         all
     }
     }

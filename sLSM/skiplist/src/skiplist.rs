@@ -1,8 +1,10 @@
 use std::borrow::Borrow;
 use std::cmp;
 use std::cmp::Ordering;
+use std::default;
 use std::marker::PhantomData;
 use std::mem;
+use std::ops::Drop;
 use std::ops::Bound;
 use std::ops::Bound::Included;
 
@@ -474,12 +476,6 @@ where
     }
 }
 
-impl<K, V> Drop for SkipList<K, V> {
-    fn drop(&mut self) {
-        println!("Dropping...");
-    }
-}
-
 impl<K, V> SkipList<K, V>
 where
     K: cmp::Ord,
@@ -492,5 +488,24 @@ where
     #[inline]
     fn elt_in(&mut self, key: K) -> bool {
         self.contains_key(&key)
+    }
+}
+
+impl<K, V> Drop for SkipList<K, V> {
+    #[inline]
+    fn drop(&mut self) {
+        unsafe {
+            let node: *mut Node<K, V> = mem::transmute_copy(&self.head);
+
+            while let Some(ref mut next) = (*node).next {
+                mem::replace(&mut (*node).next, mem::replace(&mut next.next, None));    
+            }
+        }    
+    }
+}
+
+impl<K: Ord, V> default::Default for SkipList<K, V> {
+    fn default() -> SkipList<K, V> {
+        SkipList::new()
     }
 }

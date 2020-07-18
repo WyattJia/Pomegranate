@@ -44,14 +44,6 @@ impl <K, V> Node<K, V> {
         }
     }
 
-    pub fn get(self) -> Option<(K, V)> {
-        if self.key.is_some() {
-            Some((self.key.unwrap(), self.value.unwrap()))
-        } else {
-            None
-        }
-    }
-
     pub fn is_header(&self) -> bool {
         self.prev.is_none()
     }
@@ -83,9 +75,7 @@ V: fmt::Display,
 impl<K, V> ops::Drop for Node<K, V> {
     #[inline]
     fn drop(&mut self) {
-        unsafe {
             // let node: *mut Node<K, V> = mem::transmute_copy((s)))
             println!("Dropping self...")
-        }
     }
 }

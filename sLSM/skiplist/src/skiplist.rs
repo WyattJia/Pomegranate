@@ -4,6 +4,7 @@ use std::marker::PhantomData;
 use std::ops::Bound;
 use std::borrow::Borrow;
 use std::cmp::Ordering;
+use std::ops::Bound::Included;
 
 use crate::run::Run;
 use crate::run::KVpair;
@@ -54,11 +55,11 @@ K: cmp::Ord,
 
 
     fn get_min(&mut self) -> Option<K>{
-        return self.min
+        self.min
     }
 
     fn get_max(&mut self) -> Option<K> {
-        return self.max
+        self.max
     }
 
     fn insert_key(&mut self, key: K, value: V){
@@ -264,7 +265,7 @@ K: cmp::Ord,
     }
 
 
-    fn lookup<Q: ?Sized>(&self, key: &Q, mut found: bool) -> Option<&V> 
+    fn lookup<Q: ?Sized>(&self, key: &Q) -> Option<&V> 
     where 
         K: Borrow<Q>,
         Q: Ord,
@@ -302,8 +303,9 @@ K: cmp::Ord,
     fn set_size(&mut self, size: usize) {
         self.max_size = size;
     }
-    fn get_all(&mut self) -> Vec<*mut Option<KVpair<K, V>>>{
-        let mut all: Vec<*mut KVpair<K, V>> = 
+    fn get_all(&mut self) -> Vec<KVpair<K, V>>{
+        unsafe{
+        let mut all: Vec<KVpair<K, V>> = 
                      Vec::with_capacity(self.level_gen.total());
 
         let mut node: *mut Node<K, V> = mem::transmute(&self.head);
@@ -314,42 +316,35 @@ K: cmp::Ord,
             lvl -= 1;
 
             while let Some(next) = (*node).forwards[lvl] {
-                all.push(node);
+                let kv = KVpair{ 
+                    key   :  (*node).key.as_ref(), 
+                    value :  (*node).value.as_ref(),
+                };
+                all.push(kv);
                 node = next;
             }
         }
         all
     }
+    }
 
 
-    fn get_all_in_range(&mut self, key1: K, key2: K) -> Vec<Option<KVpair<K, V>>>{
+    fn get_all_in_range(&mut self, key1: K, key2: K) -> Vec<KVpair<K, V>>{
 
-        let mut all: Vec<*mut KVpair<K, V>> =
+        unsafe {
+        let mut all: Vec<KVpair<K, V>> =
                      Vec::with_capacity(self.level_gen.total());
 
-        if key1 > self.max || key2 < self.min {
-            let null_vec: Vec<KVpair<K, V>> = Vec::new();
-            return null_vec;
-        }
+        for (k, v) in self.range(Included(&key1), Included(&key2)) {
 
-
-        let mut node = self.head.forwards[1];
-
-        while node.key < key2 {
-            node = node.forwards[1];
-        }
-
-        while node.key < key2 {
-            let key = node.key;
-            let value = node.value;
-            let kv = KVpair { key, value };
+            let kv = KVpair{
+                key:   Some((*k).as_ref()),
+                value: Some((*v).as_ref()),
+            };
             all.push(kv);
-            node = node.forwards[1];
         }
-
-        return &mut all;
-
-
+        all
+    }
     }
 
     fn range<Q>(&self, min: Bound<&Q>, max: Bound<&Q>) -> Iter<K, V>

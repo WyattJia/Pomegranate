@@ -1,21 +1,19 @@
-use std::cmp;
-use std::mem;
-use std::marker::PhantomData;
-use std::ops::Bound;
 use std::borrow::Borrow;
+use std::cmp;
 use std::cmp::Ordering;
+use std::marker::PhantomData;
+use std::mem;
+use std::ops::Bound;
 use std::ops::Bound::Included;
 
-use crate::run::Run;
-use crate::run::KVpair;
-use crate::run::Iter;
-use crate::helpers::LevelGenerator;
 use crate::helpers::GeoLevelGenerator;
+use crate::helpers::LevelGenerator;
 use crate::node::Node;
-
+use crate::run::Iter;
+use crate::run::KVpair;
+use crate::run::Run;
 
 pub struct SkipList<K, V> {
-
     pub head: Option<Box<Node<K, V>>>,
     pub tail: Option<Box<Node<K, V>>>,
     pub current_max_level: isize,
@@ -32,29 +30,28 @@ pub struct SkipList<K, V> {
 
 impl<K, V> Run<K, V> for SkipList<K, V>
 where
-K: cmp::Ord,
+    K: cmp::Ord,
 {
     #[inline]
     fn new() -> Self {
-           let maxLevel = 12;
-           let level_gen = GeoLevelGenerator::new(16, 1.0 / 2.0);
-           SkipList {
-               head: Some(Box::new(Node::head(level_gen.total()))),
-               tail: Some(Box::new(Node::head(level_gen.total()))),
-               current_max_level: 1,
-               max_level: maxLevel,
-               min: None,
-               max: None,
-               min_key: None,
-               max_key: None,
-               n: 0,
-               max_size: 0,
-               level_gen,
-           }
+        let maxLevel = 12;
+        let level_gen = GeoLevelGenerator::new(16, 1.0 / 2.0);
+        SkipList {
+            head: Some(Box::new(Node::head(level_gen.total()))),
+            tail: Some(Box::new(Node::head(level_gen.total()))),
+            current_max_level: 1,
+            max_level: maxLevel,
+            min: None,
+            max: None,
+            min_key: None,
+            max_key: None,
+            n: 0,
+            max_size: 0,
+            level_gen,
+        }
     }
 
-
-    fn get_min(&mut self) -> Option<K>{
+    fn get_min(&mut self) -> Option<K> {
         self.min
     }
 
@@ -62,20 +59,16 @@ K: cmp::Ord,
         self.max
     }
 
-    fn insert_key(&mut self, key: K, value: V){
-
+    fn insert_key(&mut self, key: K, value: V) {
         unsafe {
             let mut lvl = self.level_gen.total();
             let mut node: *mut Node<K, V> = mem::transmute_copy(&self.head);
             let mut existing_node: Option<*mut Node<K, V>> = None;
-            let mut prev_nodes: Vec<*mut Node<K, V>> =
-                Vec::with_capacity(self.level_gen.total());
+            let mut prev_nodes: Vec<*mut Node<K, V>> = Vec::with_capacity(self.level_gen.total());
 
-            
             while lvl > 0 {
                 lvl -= 1;
                 if let Some(existing_node) = existing_node {
-
                     while let Some(next) = (*node).forwards[lvl] {
                         if next == existing_node {
                             prev_nodes.push(node);
@@ -115,8 +108,7 @@ K: cmp::Ord,
             if let Some(existing_node) = existing_node {
                 mem::replace(&mut (*existing_node).value, Some(value));
             } else {
-                let mut new_node =
-                    Box::new(Node::new(key, value, self.level_gen.random()));
+                let mut new_node = Box::new(Node::new(key, value, self.level_gen.random()));
                 let new_node_ptr: *mut Node<K, V> = mem::transmute_copy(&new_node);
 
                 for (lvl, &prev_node) in prev_nodes.iter().rev().enumerate() {
@@ -153,9 +145,9 @@ K: cmp::Ord,
     }
 
     fn delete_key<Q: ?Sized>(&mut self, key: &Q) -> Option<V>
-    where 
-    K: Borrow<Q>,
-    Q: Ord,
+    where
+        K: Borrow<Q>,
+        Q: Ord,
     {
         if self.n == 0 {
             return None;
@@ -164,8 +156,7 @@ K: cmp::Ord,
         unsafe {
             let mut node: *mut Node<K, V> = mem::transmute_copy(&self.head);
             let mut return_node: Option<*mut Node<K, V>> = None;
-            let mut prev_nodes: Vec<*mut Node<K, V>> =
-                Vec::with_capacity(self.level_gen.total());
+            let mut prev_nodes: Vec<*mut Node<K, V>> = Vec::with_capacity(self.level_gen.total());
 
             let mut lvl = self.level_gen.total();
             while lvl > 0 {
@@ -264,9 +255,8 @@ K: cmp::Ord,
         }
     }
 
-
-    fn lookup<Q: ?Sized>(&self, key: &Q) -> Option<&V> 
-    where 
+    fn lookup<Q: ?Sized>(&self, key: &Q) -> Option<&V>
+    where
         K: Borrow<Q>,
         Q: Ord,
     {
@@ -296,56 +286,49 @@ K: cmp::Ord,
         }
     }
 
-
     fn num_elements(&self) -> i64 {
-        return self.n
+        return self.n;
     }
     fn set_size(&mut self, size: usize) {
         self.max_size = size;
     }
-    fn get_all(&mut self) -> Vec<KVpair<K, V>>{
-        unsafe{
-        let mut all: Vec<KVpair<K, V>> = 
-                     Vec::with_capacity(self.level_gen.total());
-
-        let mut node: *mut Node<K, V> = mem::transmute(&self.head);
-
-        let mut lvl = self.level_gen.total();
-        
-        while lvl > 0 {
-            lvl -= 1;
-
-            while let Some(next) = (*node).forwards[lvl] {
-                let kv = KVpair{ 
-                    key   :  (*node).key.as_ref(), 
-                    value :  (*node).value.as_ref(),
-                };
-                all.push(kv);
-                node = next;
-            }
-        }
-        all
-    }
-    }
-
-
-    fn get_all_in_range(&mut self, key1: K, key2: K) -> Vec<KVpair<K, V>>{
-
+    fn get_all(&mut self) -> Vec<KVpair<K, V>> {
         unsafe {
-            let mut all: Vec<KVpair<K, V>> =
-                         Vec::with_capacity(self.level_gen.total());
+            let mut all: Vec<KVpair<K, V>> = Vec::with_capacity(self.level_gen.total());
+
+            let mut node: *mut Node<K, V> = mem::transmute(&self.head);
+
+            let mut lvl = self.level_gen.total();
+
+            while lvl > 0 {
+                lvl -= 1;
+
+                while let Some(next) = (*node).forwards[lvl] {
+                    let kv = KVpair {
+                        key: (*node).key.as_ref(),
+                        value: (*node).value.as_ref(),
+                    };
+                    all.push(kv);
+                    node = next;
+                }
+            }
+            all
+        }
+    }
+
+    fn get_all_in_range(&mut self, key1: K, key2: K) -> Vec<KVpair<K, V>> {
+        unsafe {
+            let mut all: Vec<KVpair<K, V>> = Vec::with_capacity(self.level_gen.total());
 
             for (k, v) in self.range(Included(&key1), Included(&key2)) {
-
-
-                let kv = KVpair{
-                    key:   Some(*k),
+                let kv = KVpair {
+                    key: Some(*k),
                     value: Some(*v),
                 };
                 all.push(kv);
             }
-        all
-    }
+            all
+        }
     }
 
     fn range<Q>(&self, min: Bound<&Q>, max: Bound<&Q>) -> Iter<K, V>
@@ -419,8 +402,12 @@ K: cmp::Ord,
         }
     }
 
-    fn link_length(&self, start: *mut Node<K, V>, end: Option<*mut Node<K, V>>, lvl: usize, ) -> Result<usize, bool> {
-        
+    fn link_length(
+        &self,
+        start: *mut Node<K, V>,
+        end: Option<*mut Node<K, V>>,
+        lvl: usize,
+    ) -> Result<usize, bool> {
         unsafe {
             let mut length = 0;
             let mut node = start;
@@ -452,8 +439,8 @@ K: cmp::Ord,
             Ok(length)
         }
     }
-    
-    fn contains_key<Q: ?Sized>(&self, key: &Q) -> bool 
+
+    fn contains_key<Q: ?Sized>(&self, key: &Q) -> bool
     where
         K: Borrow<Q>,
         Q: Ord,
@@ -479,25 +466,23 @@ K: cmp::Ord,
                                 break;
                             }
                         }
-
                     }
                 }
             }
             false
-        }   
+        }
     }
-
 }
 
-impl<K, V> Drop for SkipList<K, V>{
-    fn drop(&mut self){
+impl<K, V> Drop for SkipList<K, V> {
+    fn drop(&mut self) {
         println!("Dropping...");
     }
 }
 
 impl<K, V> SkipList<K, V>
 where
-K: cmp::Ord,
+    K: cmp::Ord,
 {
     #[inline]
     fn is_empty(&self) -> bool {
@@ -505,7 +490,7 @@ K: cmp::Ord,
     }
 
     #[inline]
-    fn elt_in (&mut self, key: K) -> bool {
+    fn elt_in(&mut self, key: K) -> bool {
         self.contains_key(&key)
     }
 }

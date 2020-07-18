@@ -13,7 +13,7 @@ pub struct GeoLevelGenerator {
 }
 
 impl GeoLevelGenerator {
-    pub fn new(total: usize, p: f64) -> Self{
+    pub fn new(total: usize, p: f64) -> Self {
         if total == 0 {
             panic!("total can not be zero.");
         }
@@ -27,7 +27,6 @@ impl GeoLevelGenerator {
         }
     }
 }
-
 
 impl LevelGenerator for GeoLevelGenerator {
     fn random(&mut self) -> usize {
@@ -46,12 +45,10 @@ impl LevelGenerator for GeoLevelGenerator {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
 
     use super::GeoLevelGenerator;
-
 
     #[test]
     #[should_panic]
@@ -75,5 +72,4 @@ mod tests {
     fn new() {
         GeoLevelGenerator::new(1, 0.5);
     }
-
 }

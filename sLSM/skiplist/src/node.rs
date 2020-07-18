@@ -1,8 +1,7 @@
-use std::iter;
 use std::fmt;
+use std::iter;
 use std::ops;
 // use std::mem;
-
 
 pub struct Node<K, V> {
     pub key: Option<K>,
@@ -17,9 +16,7 @@ pub struct Node<K, V> {
     pub links_len: Vec<usize>,
 }
 
-
-impl <K, V> Node<K, V> {
-
+impl<K, V> Node<K, V> {
     pub fn head(max_level: usize) -> Self {
         Node {
             key: None,
@@ -33,7 +30,7 @@ impl <K, V> Node<K, V> {
     }
 
     pub fn new(key: K, value: V, max_level: usize) -> Self {
-        Node{
+        Node {
             key: Some(key),
             value: Some(value),
             max_level: max_level,
@@ -57,10 +54,10 @@ impl <K, V> Node<K, V> {
     }
 }
 
-impl <K, V> fmt::Display for Node<K, V>
+impl<K, V> fmt::Display for Node<K, V>
 where
-K: fmt::Display,
-V: fmt::Display,
+    K: fmt::Display,
+    V: fmt::Display,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if let (&Some(ref k), &Some(ref v)) = (&self.key, &self.value) {
@@ -69,13 +66,12 @@ V: fmt::Display,
             Ok(())
         }
     }
-
 }
 
 impl<K, V> ops::Drop for Node<K, V> {
     #[inline]
     fn drop(&mut self) {
-            // let node: *mut Node<K, V> = mem::transmute_copy((s)))
-            println!("Dropping self...")
+        // let node: *mut Node<K, V> = mem::transmute_copy((s)))
+        println!("Dropping self...")
     }
 }

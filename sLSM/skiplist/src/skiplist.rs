@@ -54,11 +54,18 @@ where
     }
 
     fn get_min(&mut self) -> Option<K> {
-        self.min
+        // self.head
+        unsafe {
+            let header: Node<K, V> = mem::transmute_copy(&self.head);
+            return header.key
+        }
     }
 
     fn get_max(&mut self) -> Option<K> {
-        self.max
+        unsafe {
+            let max: Node<K, V> = mem::transmute_copy(&self.get_last());
+            return max.key
+        }
     }
 
     fn insert_key(&mut self, key: K, value: V) {
@@ -307,8 +314,8 @@ where
 
                 while let Some(next) = (*node).forwards[lvl] {
                     let kv = KVpair {
-                        key: (*node).key.as_ref(),
-                        value: (*node).value.as_ref(),
+                        key:   (*node).key,
+                        value: (*node).value,
                     };
                     all.push(kv);
                     node = next;

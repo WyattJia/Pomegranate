@@ -67,11 +67,3 @@ where
         }
     }
 }
-
-impl<K, V> ops::Drop for Node<K, V> {
-    #[inline]
-    fn drop(&mut self) {
-        // let node: *mut Node<K, V> = mem::transmute_copy((s)))
-        println!("Dropping self...")
-    }
-}

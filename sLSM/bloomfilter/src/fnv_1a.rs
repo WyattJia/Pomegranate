@@ -1,15 +1,10 @@
 //! An implementation of the [Fowler–Noll–Vo hash function][chongo].
 
-
 extern crate alloc;
 
-#[cfg(feature = "std")]
 use std::default::Default;
-#[cfg(feature = "std")]
 use std::hash::{Hasher, BuildHasherDefault};
-#[cfg(not(feature = "std"))]
 use core::default::Default;
-#[cfg(not(feature = "std"))]
 use core::hash::{Hasher, BuildHasherDefault};
 
 /// See the [crate documentation](index.html) for more details.

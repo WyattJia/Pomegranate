@@ -2,12 +2,15 @@
 
 extern crate alloc;
 
+#[cfg(feature = "std")]
 use std::default::Default;
+#[cfg(feature = "std")]
 use std::hash::{Hasher, BuildHasherDefault};
+#[cfg(not(feature = "std"))]
 use core::default::Default;
+#[cfg(not(feature = "std"))]
 use core::hash::{Hasher, BuildHasherDefault};
 
-/// See the [crate documentation](index.html) for more details.
 #[allow(missing_copy_implementations)]
 pub struct FnvHasher(u64);
 

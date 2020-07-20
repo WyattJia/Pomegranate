@@ -1,7 +1,7 @@
 pub mod bloom;
 pub mod fnv_1a; 
 
-pub use crate::bloom::BloomFilter;
+pub use crate::bloom::Bloom;
 
 
 #[cfg(test)]

@@ -1,5 +1,7 @@
 extern crate bit_vec;
 extern crate rand;
+// todo use fnv 1a instead of sip hasher.
+extern crate siphasher;
 
 use std::cmp;
 use std::f64;
@@ -8,15 +10,17 @@ use std::marker::PhantomData;
 
 use rand::prelude::*;
 use bit_vec::BitVec;
+use siphasher::sip::SipHasher13;
 
-use fnv_1a::fnv_1a;
+// use fnv_1a::fnv_1a;
 
 
 pub struct Bloom<T: ?Sized> {
     bitmap: BitVec,
     bitmap_bits: u64,
     k_num: u32,
-    fnv: fnv_1a, // need not ?
+    // fnv: fnv_1a, // need not ?
+    sips: [SipHasher13; 2],
 
     _phantom: PhantomData<T>,
 }

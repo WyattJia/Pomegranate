@@ -1,10 +1,12 @@
 use std::fmt;
 use std::iter;
 use std::ops;
+// use std::cell::Cell;
 // use std::mem;
 
+#[derive(Clone, Debug)]
 pub struct Node<K, V> {
-    pub key: Option<K>,
+    pub key:   Option<K>,
     pub value: Option<V>,
     pub max_level: usize,
     // forwards: vector of links to next node at the respective level.
@@ -19,7 +21,7 @@ pub struct Node<K, V> {
 impl<K, V> Node<K, V> {
     pub fn head(max_level: usize) -> Self {
         Node {
-            key: None,
+            key:   None,
             value: None,
             next: None,
             prev: None,
@@ -67,3 +69,11 @@ where
         }
     }
 }
+
+// impl<K, V> Clone for Node<K, V> {
+//     fn clone(&self) -> Node<K, V> {
+//         match self {
+
+//         }
+//     }
+// }

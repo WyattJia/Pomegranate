@@ -6,6 +6,7 @@ use std::marker::PhantomData;
 use std::mem;
 use std::ops::Drop;
 use std::ops::Bound;
+// use std::cell::UnsafeCell;
 use std::ops::Bound::Included;
 
 use crate::helpers::GeoLevelGenerator;
@@ -313,9 +314,11 @@ where
                 lvl -= 1;
 
                 while let Some(next) = (*node).forwards[lvl] {
+                    let node_key   = mem::transmute_copy(&(*node).key);
+                    let node_value = mem::transmute_copy(&(*node).value);
                     let kv = KVpair {
-                        key:   (*node).key,
-                        value: (*node).value,
+                        key:   node_key,
+                        value: node_value,
                     };
                     all.push(kv);
                     node = next;
@@ -330,9 +333,11 @@ where
             let mut all: Vec<KVpair<K, V>> = Vec::with_capacity(self.level_gen.total());
 
             for (k, v) in self.range(Included(&key1), Included(&key2)) {
+                let node_key   = mem::transmute_copy(&k);
+                let node_value = mem::transmute_copy(&v);
                 let kv = KVpair {
-                    key: Some(*k),
-                    value: Some(*v),
+                    key:   node_key, 
+                    value: node_value,
                 };
                 all.push(kv);
             }

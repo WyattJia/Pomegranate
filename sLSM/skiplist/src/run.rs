@@ -71,11 +71,11 @@ where
 
 // Run Iterator
 pub struct Iter<'a, K: 'a, V: 'a> {
-    start: *const Node<K, V>,
-    end: *const Node<K, V>,
-    size: usize,
-    _lifetime_k: PhantomData<&'a K>,
-    _lifetime_v: PhantomData<&'a V>,
+    pub start: *const Node<K, V>,
+    pub end: *const Node<K, V>,
+    pub size: usize,
+    pub _lifetime_k: PhantomData<&'a K>,
+    pub _lifetime_v: PhantomData<&'a V>,
 }
 
 impl<'a, K, V> Iterator for Iter<'a, K, V> {

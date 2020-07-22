@@ -1,10 +1,6 @@
 use std::fmt;
 use std::iter;
-use std::ops;
-// use std::cell::Cell;
-// use std::mem;
 
-#[derive(Clone, Debug)]
 pub struct Node<K, V> {
     pub key:   Option<K>,
     pub value: Option<V>,

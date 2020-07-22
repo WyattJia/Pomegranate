@@ -6,7 +6,6 @@ use std::marker::PhantomData;
 use std::mem;
 use std::ops::Drop;
 use std::ops::Bound;
-// use std::cell::UnsafeCell;
 use std::ops::Bound::Included;
 
 use crate::helpers::GeoLevelGenerator;
@@ -37,13 +36,12 @@ where
 {
     #[inline]
     fn new() -> Self {
-        let maxLevel = 12;
         let level_gen = GeoLevelGenerator::new(16, 1.0 / 2.0);
         SkipList {
             head: Some(Box::new(Node::head(level_gen.total()))),
             tail: Some(Box::new(Node::head(level_gen.total()))),
             current_max_level: 1,
-            max_level: maxLevel,
+            max_level: 12,
             min: None,
             max: None,
             min_key: None,

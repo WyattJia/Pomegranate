@@ -1,5 +1,5 @@
 [package]
-name = "Pomegranate"
+name = "slsm"
 version = "0.1.0"
 authors = ["wellls <i@eventloop.live>"]
 edition = "2018"
@@ -7,3 +7,11 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+
+
+[workspace]
+
+members = [
+    "skiplist",
+    "disk"
+]

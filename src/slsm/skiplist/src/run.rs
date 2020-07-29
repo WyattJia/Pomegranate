@@ -7,7 +7,10 @@ use std::ops::Bound;
 use crate::node::Node;
 
 // Key-value pair struct start
+#[derive(Debug, Clone)]
 pub struct KVpair<K, V> {
+    // todo impl iterator for KVpair
+    // todo impl partialOrd for KVpair
     pub key: Option<K>,
     pub value: Option<V>,
 }

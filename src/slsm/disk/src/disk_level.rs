@@ -72,8 +72,25 @@ impl <K, V> StaticHeap<K, V> {
   
     }
 
-    fn heapify(&mut self, i: isize) {} 
-    fn pop(&mut self) -> KVIntPairT<K, V> {
+    fn heapify(&mut self, i: isize) {
+      let mut smallest = (leftchild!(i) < &self.size && &self.arr[leftchild!(i)] < &self.arr[i)] ? leftchild!(i) : i;
+      if (rightchild!(i) < &self.size && &self.arr[rightchild!(i)] < &self.arr[smallest]) {
 
+      smallest = rightchild!(i);
+      }
+      if(smallest != i) {
+        let tmp: KVIntPairT = &self.arr[i];
+        &mut self.arr[i] = &mut self.arr[smallest];
+        &mut self.arr[smallest] = tmp;
+
+        heapify(smallest);
+      } 
+
+    } 
+    fn pop(&mut self) -> KVIntPairT<K, V> {
+        let ret: KVIntPairT = &mut self.arr[0];
+        &mut self.arr[0] = &mut self.arr[--size];
+        &self.heapify(0);
+        ret
     }
 }

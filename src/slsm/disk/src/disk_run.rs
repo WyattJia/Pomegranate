@@ -1,4 +1,5 @@
-use std::cmp:Ord;
+use std::fs::File;
+use std::cmp::Ord;
 
 use skiplist::run::KVpair;
 
@@ -31,46 +32,54 @@ pub struct DiskRun<K, V> {
 // 
 // }
 
-impl <K, V> for DiskRun<K, V>
+impl <K, V> DiskRun<K, V>
 {
-    fn new(capacity: usize, page_size: usize, page_size: isize) -> Self {
-        let _filename = "C_" + level
+    fn new(capacity: usize, page_size: usize, level: isize, run_id: isize, bf_fp: f32) -> Self {
+        let _filename = "C_".to_owned() + &level.to_string() + "_" + &run_id.to_string() + ".txt";
+
+        let mut result:i64;
+
+        let fd =     
+        let mut file = File::open("foo.txt")?;
+
     }
 
     fn set_capacity(&mut self, new_capacity: usize) {
         &mut self.capacity = new_capacity;
     }
 
-    fn get_capacity(&self) -> usize {
-        return &self.capacity
+    fn get_capacity(self) -> usize {
+        return self.capacity
     }
 
     fn write_data(&mut self, run: KVpair<K, V>, offset: usize, len: usize){
-        &mut self.capacity = len;
     }
 
     fn construct_index(&mut self){
 
     }
 
-    fn binary_search(&mut self, offset: usize, n: usize, &key: K, &found: bool) -> usize {
+    fn binary_search(&mut self, offset: usize, n: usize, key: &K, found: &bool) -> usize {
         let mut min = offset;
         min
     }
 
-    fn get_flanking_fp(&mut self, &start: usize, &end: usize){
+    fn get_flanking_fp(&mut self, start: &usize, end: &usize){
 
     }
 
-    fn get_index(&mut self, &key: K, &found: bool) -> usize {
+    fn get_index(&mut self, key: &K, found: &bool) -> usize {
 
+        let i:usize = 1;
+        i
     }
 
-    fn lookup(&self, &key: K, &found: bool) -> V {
+    fn lookup(&self, key: &K, found: &bool) -> V {
 
+        V
     }
 
-    fn range(&self, &key1: K, key2: K, &i1: usize, &i2: usize){
+    fn range(&self, key1: &K, key2: &K, i1: &usize, i2: &usize){
 
     }
 

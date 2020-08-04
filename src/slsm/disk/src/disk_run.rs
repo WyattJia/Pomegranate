@@ -1,9 +1,17 @@
 use std::path::Path;
 use std::cmp::Ord;
 use std::fs::File;
+use std::fs::OpenOptions;
+use std::io::{Seek, SeekFrom, Write};
+use std::os::unix::prelude::AsRawFd;
+use std::ptr;
+use std::mem::size_of;
 
+use libc;
+use libc::off_t;
 use nix;
 use tempfile;
+use memmap::MmapOptions;
 
 use skiplist::run::KVpair;
 
@@ -38,23 +46,69 @@ pub struct DiskRun<K, V> {
 
 impl <K, V> DiskRun<K, V>
 {
-    fn new(capacity: usize, page_size: usize, level: isize, run_id: isize, bf_fp: f32) -> Self {
-        
+    fn new(capacity: usize, page_size: usize, level: isize, run_id: isize, bf_fp: f32) {
+
+        let size = 1024 * 1024;
         let _filename = "C_".to_owned() + &level.to_string() + "_" + &run_id.to_string() + ".txt";
-        let mut result:i62;
+        let mut f = OpenOptions::new()
+                .read(true)
+                .write(true)
+                .create(true)
+                .open(&_filename)
+                .expect("unable to open file.");
 
+        let mut result:i64;
 
-        let tempdir = tempfile::tempdir().unwrap();
-        let fullpath = tempdir.path().join(&_filename);
-        drop(File::create(&fullpath).unwrap());
+        // allocate space in the file first.
+        f.seek(SeekFrom::Start(size as u64)).unwrap();
+        f.write_all(&[0]).unwrap();
+        f.seek(SeekFrom::Start(0)).unwrap();
+
+        unsafe {
+            let map = libc::mmap(
+                ptr::null_mut(),
+                size,
+                libc::PROT_READ | libc::PROT_WRITE,
+                libc::MAP_SHARED,
+                f.as_raw_fd(),
+                0,
+            );
+
+            if map == libc::MAP_FAILED {
+                panic!("Could not access data from memory mapped file.")
+            };
+            
+            ptr::copy_nonoverlapping(&_filename, map as *mut String, _filename.len());
+
+            /* Todo: review mmap usage.
+            map = (KVPair<K, V>*) mmap(0, filesize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+
+            todo: update size of
+
+            */
+            let mut filesize:usize = capacity * size_of::<libc::c_void>(); 
+
+            let tempdir = tempfile::tempdir().unwrap();
+            let fullpath = tempdir.path().join(&_filename);
+            drop(File::create(&fullpath).unwrap());
         
-        let path = Path::new(&_filename);
-        let display = path.display();
+            let path = Path::new(&_filename);
+            let display = path.display();
 
-        let mut fd = match nix::fcntl::open(&fullpath, nix::fcntl::OFlag::empty(), nix::sys::stat::Mode::empty()) {
-            Err(why) => panic!("couldn't open {}: {}", display, why),
-            Ok(fd) => fd,
-        };
+            let mut fd = match nix::fcntl::open(&fullpath, nix::fcntl::OFlag::empty(), nix::sys::stat::Mode::empty()) {
+                Err(why) => panic!("couldn't open {}: {}", display, why),
+                Ok(fd) => fd,
+            };
+
+            // let offset: off_t = 0;
+            // result = nix::unistd::lseek63(fd, offset, Whence::SeekSet).unwrap();
+            // if result == -2 {
+            //     drop
+            // }
+
+        }
+
+       
 
 
         /*
@@ -73,7 +127,6 @@ impl <K, V> DiskRun<K, V>
             exit(EXIT_FAILURE);
         }
 
-        result = nix::unistd::lseek(fd, )
         */
     }
 

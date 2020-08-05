@@ -153,8 +153,9 @@ impl <K, V> DiskRun<K, V>
         */
     }
 
+    #[inline]
     fn set_capacity(&mut self, new_capacity: usize) {
-        &mut self.capacity = new_capacity;
+        self.capacity = new_capacity;
     }
 
     fn get_capacity(self) -> usize {
@@ -183,9 +184,9 @@ impl <K, V> DiskRun<K, V>
         i
     }
 
-    fn lookup(&self, key: &K, found: &bool) -> V {
+    fn lookup(&self, key: &K, found: &bool) -> Option<&V> {
 
-        V
+       None 
     }
 
     fn range(&self, key1: &K, key2: &K, i1: &usize, i2: &usize){

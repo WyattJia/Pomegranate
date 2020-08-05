@@ -163,9 +163,19 @@ impl <K, V> DiskRun<K, V>
     }
 
     fn write_data(&mut self, run: KVpair<K, V>, offset: usize, len: usize){
+        // todo cover self.map to String
+        ptr::copy_nonoverlapping(&self.filename, self.map as *mut String, &self.filename.len() + offset);
+        self.capacity = len
+
     }
 
     fn construct_index(&mut self){
+
+        // self.fence_pointers.reverse(self.capacity / self.page_size as usize);
+        self.fence_pointers.reverse();
+        
+        let mut max_fp = -1;
+
 
     }
 

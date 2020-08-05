@@ -1,11 +1,14 @@
 use std::path::Path;
 use std::cmp::Ord;
 use std::fs::File;
+use std::fs::remove_file;
 use std::fs::OpenOptions;
 use std::io::{Seek, SeekFrom, Write};
 use std::os::unix::prelude::AsRawFd;
 use std::ptr;
+use std::iter;
 use std::mem::size_of;
+use std::marker::PhantomData;
 
 use libc;
 use libc::off_t;
@@ -46,7 +49,7 @@ pub struct DiskRun<K, V> {
 
 impl <K, V> DiskRun<K, V>
 {
-    fn new(capacity: usize, page_size: usize, level: isize, run_id: isize, bf_fp: f32) {
+    fn new(capacity: usize, page_size: usize, level: isize, run_id: isize, bf_fp: f32) -> Self {
 
         let size = 1024 * 1024;
         let _filename = "C_".to_owned() + &level.to_string() + "_" + &run_id.to_string() + ".txt";
@@ -85,6 +88,10 @@ impl <K, V> DiskRun<K, V>
 
             todo: update size of
 
+            todo: optimize unsafe code block
+
+            todo: return self
+
             */
             let mut filesize:usize = capacity * size_of::<libc::c_void>(); 
 
@@ -105,6 +112,22 @@ impl <K, V> DiskRun<K, V>
             // if result == -2 {
             //     drop
             // }
+
+            DiskRun {
+                fd: fd as isize,
+                filename: _filename,
+                min_key: 0,
+                max_key: 0,
+                map: map, // todo cover ffi::c_void to KVpair<K, V>,
+                capacity: capacity,
+                page_size: page_size as isize,
+                level: level,
+                fence_pointers: iter::repeat(0).take(level.try_into().unwrap()).collect(),// PhantomData<vec!(K)>, 
+                imax_fp: 0,
+                run_id: 0,
+                bf_fp: 0.0,
+            }
+
 
         }
 
@@ -182,6 +205,24 @@ impl <K, V> DiskRun<K, V>
     }
 
     fn double_size(&mut self) {
+
+    }
+}
+
+
+impl<K, V> Drop for DiskRun<K, V> {
+    #[inline]
+    fn drop(&mut self) {
+        nix::unistd::fsync(*&self.fd as i32);
+        &self.do_unmap();
+
+        if let Err(e) = remove_file(&self.filename) {                        
+            panic!(                                                           
+                "failed to remove file, maybe file race? {}",
+                e                                                            
+            );                                                               
+        };
+
 
     }
 }

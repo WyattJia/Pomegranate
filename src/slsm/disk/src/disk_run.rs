@@ -68,7 +68,7 @@ impl <K, V> DiskRun<K, V>
         f.seek(SeekFrom::Start(0)).unwrap();
 
         unsafe {
-            let map = libc::mmap(
+            let c_void_map = libc::mmap(
                 ptr::null_mut(),
                 size,
                 libc::PROT_READ | libc::PROT_WRITE,
@@ -77,11 +77,14 @@ impl <K, V> DiskRun<K, V>
                 0,
             );
 
-            if map == libc::MAP_FAILED {
+            
+            if c_void_map == libc::MAP_FAILED {
                 panic!("Could not access data from memory mapped file.")
             };
             
-            ptr::copy_nonoverlapping(&_filename, map as *mut String, _filename.len());
+            // ptr::copy_nonoverlapping(&_filename, map as *mut String, _filename.len());
+
+            let mut map: KVpair<K, V> = *(c_void_map as *mut KVpair<K, V>);
 
             /* Todo: review mmap usage.
             map = (KVPair<K, V>*) mmap(0, filesize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
@@ -118,6 +121,7 @@ impl <K, V> DiskRun<K, V>
                 filename: _filename,
                 min_key: 0,
                 max_key: 0,
+                // let x: &mut T = &mut *(m as *mut T);
                 map: map, // todo cover ffi::c_void to KVpair<K, V>,
                 capacity: capacity,
                 page_size: page_size as isize,

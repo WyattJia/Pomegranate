@@ -1,5 +1,4 @@
 use std::path::Path;
-use std::cmp::Ord;
 use std::fs::File;
 use std::fs::remove_file;
 use std::fs::OpenOptions;
@@ -8,14 +7,11 @@ use std::os::unix::prelude::AsRawFd;
 use std::ptr;
 use std::convert::TryInto;
 use std::iter;
-use std::mem::size_of;
-use std::marker::PhantomData;
+use std::mem;
 
 use libc;
-use libc::off_t;
 use nix;
 use tempfile;
-use memmap::MmapOptions;
 
 use skiplist::run::KVpair;
 
@@ -85,8 +81,12 @@ impl <K, V> DiskRun<K, V>
             
             // ptr::copy_nonoverlapping(&_filename, map as *mut String, _filename.len());
 
-            let mut map: KVpair<K, V> = *(c_void_map as *mut KVpair<K, V>);
+            let mut mut_map: &mut KVpair<K, V> = &mut *(c_void_map as *mut KVpair<K, V>);
 
+
+            // todo get this fucking transmute_copy away.
+            let map = mem::transmute_copy(mut_map);
+           
             /* Todo: review mmap usage.
             map = (KVPair<K, V>*) mmap(0, filesize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 
@@ -97,7 +97,6 @@ impl <K, V> DiskRun<K, V>
             todo: return self
 
             */
-            let mut filesize:usize = capacity * size_of::<libc::c_void>(); 
 
             let tempdir = tempfile::tempdir().unwrap();
             let fullpath = tempdir.path().join(&_filename);
@@ -106,24 +105,18 @@ impl <K, V> DiskRun<K, V>
             let path = Path::new(&_filename);
             let display = path.display();
 
-            let mut fd = match nix::fcntl::open(&fullpath, nix::fcntl::OFlag::empty(), nix::sys::stat::Mode::empty()) {
+            let fd = match nix::fcntl::open(&fullpath, nix::fcntl::OFlag::empty(), nix::sys::stat::Mode::empty()) {
                 Err(why) => panic!("couldn't open {}: {}", display, why),
                 Ok(fd) => fd,
             };
 
-            // let offset: off_t = 0;
-            // result = nix::unistd::lseek63(fd, offset, Whence::SeekSet).unwrap();
-            // if result == -2 {
-            //     drop
-            // }
 
             DiskRun {
                 fd: fd as isize,
                 filename: _filename,
                 min_key: 0,
                 max_key: 0,
-                // let x: &mut T = &mut *(m as *mut T);
-                map: map, // todo cover ffi::c_void to KVpair<K, V>,
+                map: map, 
                 capacity: capacity,
                 page_size: page_size as isize,
                 level: level,
@@ -136,26 +129,6 @@ impl <K, V> DiskRun<K, V>
 
         }
 
-       
-
-
-        /*
-           * Stretch the file size to the size of the (mmapped) array of KVPairs
-           * 扩展文件大小
-           * lseek 重新定位文件的读写位置。
-           * 每一个已打开的文件都有一个读写位置, 当打开文件时通常其读写位置是指向文件开头,
-           * 若是以附加的方式打开文件(如O_APPEND), 则读写位置会指向文件尾.
-           * 当read()或write()时, 读写位置会随之增加,lseek()便是用来控制该文件的读写位置.
-           * 参数fildes 为已打开的文件描述词, 参数offset 为根据参数whence来移动读写位置的位移数.
-           
-        result = lseek(fd, filesize - 1, SEEK_SET);
-        if (result == -1) {
-            close(fd);
-            perror("Error calling lseek() to 'stretch' the file");
-            exit(EXIT_FAILURE);
-        }
-
-        */
     }
 
     #[inline]
@@ -167,9 +140,11 @@ impl <K, V> DiskRun<K, V>
         return self.capacity
     }
 
-    fn write_data(&mut self, run: KVpair<K, V>, offset: usize, len: usize){
+    fn write_data(&mut self, run: &mut KVpair<K, V>, offset: usize, len: usize){
         // todo cover self.map to String
-        ptr::copy_nonoverlapping(&self.filename, self.map as *mut String, &self.filename.len() + offset);
+        unsafe {
+            ptr::copy_nonoverlapping( &self.map as *const KVpair<K, V>,  run, &self.filename.len() + offset);
+        }
         self.capacity = len
 
     }
@@ -185,7 +160,7 @@ impl <K, V> DiskRun<K, V>
     }
 
     fn binary_search(&mut self, offset: usize, n: usize, key: &K, found: &bool) -> usize {
-        let mut min = offset;
+        let  min = offset;
         min
     }
 
@@ -211,8 +186,8 @@ impl <K, V> DiskRun<K, V>
     fn print_elts(&self){
 
 
-        let mut j = 0;
-        while j < &self.capacity {
+        let mut j: usize = 0;
+        while j < self.capacity {
             j += 1
         }
 

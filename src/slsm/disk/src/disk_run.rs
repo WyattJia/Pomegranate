@@ -6,6 +6,7 @@ use std::fs::OpenOptions;
 use std::io::{Seek, SeekFrom, Write};
 use std::os::unix::prelude::AsRawFd;
 use std::ptr;
+use std::convert::TryInto;
 use std::iter;
 use std::mem::size_of;
 use std::marker::PhantomData;
@@ -29,7 +30,7 @@ pub struct DiskRun<K, V> {
     capacity:       usize,
     filename:       String,
     level:          isize,
-    fence_pointers: Vec<K>,
+    fence_pointers: Vec<Option<*mut K>>,
     imax_fp:        usize,
     run_id:         usize,
     bf_fp:          f64,
@@ -126,7 +127,7 @@ impl <K, V> DiskRun<K, V>
                 capacity: capacity,
                 page_size: page_size as isize,
                 level: level,
-                fence_pointers: iter::repeat(0).take(level.try_into().unwrap()).collect(),// PhantomData<vec!(K)>, 
+                fence_pointers:  iter::repeat(None).take(level.try_into().unwrap()).collect(), 
                 imax_fp: 0,
                 run_id: 0,
                 bf_fp: 0.0,
@@ -208,6 +209,12 @@ impl <K, V> DiskRun<K, V>
     }
 
     fn print_elts(&self){
+
+
+        let mut j = 0;
+        while j < &self.capacity {
+            j += 1
+        }
 
     }
 

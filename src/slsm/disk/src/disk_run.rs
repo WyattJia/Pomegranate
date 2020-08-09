@@ -135,7 +135,8 @@ impl <K, V> DiskRun<K, V>
     fn set_capacity(&mut self, new_capacity: usize) {
         self.capacity = new_capacity;
     }
-
+    
+    #[inline]
     fn get_capacity(self) -> usize {
         return self.capacity
     }
@@ -151,17 +152,72 @@ impl <K, V> DiskRun<K, V>
 
     fn construct_index(&mut self){
 
+/*
+        // construct fence pointers and write BF
+        //        _fencePointers.resize(0);
+        _fencePointers.reserve(_capacity / pageSize);
+        _iMaxFP = -1; // TODO IS THIS SAFE?
+        for (int j = 0; j < _capacity; j++) {
+            bf.add((K*) &map[j].key, sizeof(K));
+            if (j % pageSize == 0){
+                _fencePointers.push_back(map[j].key);
+                _iMaxFP++;
+            }
+        }
+        if (_iMaxFP >= 0){
+            _fencePointers.resize(_iMaxFP + 1);
+        }
+
+        minKey = map[0].key;
+        maxKey = map[_capacity - 1].key;
+*/
         // self.fence_pointers.reverse(self.capacity / self.page_size as usize);
         self.fence_pointers.reverse();
         
         let mut max_fp = -1;
+        let mut j:usize = 0;
+        while j < self.capacity {
+            j += 1;
+            // todo init bloom
+            // self.bf.
+            if j % (self.page_size as usize) == 0 {
+                self.fence_pointers.push(self.map[j].key);
+                max_fp += 1;
+            }
 
+        }
+
+        if max_fp >= 0 {
+            self.fence_pointers.resize(max_fp as usize + 1, None);
+        }
+
+        // todo change map type to hash or vec , check cpp's type
+        self.min_key = map[0].key;
+        self.max_key = map[self.capacity - 1].key;
 
     }
 
-    fn binary_search(&mut self, offset: usize, n: usize, key: &K, found: &bool) -> usize {
+    fn binary_search(&mut self, offset: usize, n: usize, key: &K, found: bool) -> usize {
         let  min = offset;
-        min
+
+        while n == 0 {
+             found = true;
+             return offset
+        }; 
+
+        let mut min = offset;
+        let mut max = offset + n - 1;
+        let mut middle = (min + max) >> 1;
+        while (min <= max) {
+            if key > map[middle].key {
+                
+            } else if (key == map[middle].key) {
+                found = true;
+                return 
+            }
+        }
+
+        
     }
 
     fn get_flanking_fp(&mut self, start: &usize, end: &usize){

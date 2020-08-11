@@ -19,8 +19,8 @@ use skiplist::run::KVpair;
 pub struct DiskRun<'a, K: 'a, V: 'a> {
     pub fd: isize,
     pub page_size: isize,
-    pub min_key: isize,
-    pub max_key: isize,
+    pub min_key: Option<KVpair<K, V>>,
+    pub max_key: Option<KVpair<K, V>>,
     pub map: Vec<KVpair<K, V>>,
 
     capacity: usize,
@@ -115,8 +115,8 @@ impl<'a, K, V> DiskRun<'a, K, V> {
             DiskRun {
                 fd: fd as isize,
                 filename: _filename,
-                min_key: 0,
-                max_key: 0,
+                min_key: None,
+                max_key: None,
                 map: map,
                 capacity: capacity,
                 page_size: page_size as isize,
@@ -139,11 +139,11 @@ impl<'a, K, V> DiskRun<'a, K, V> {
         return self.capacity;
     }
 
-    fn write_data(&mut self, run: &mut KVpair<K, V>, offset: usize, len: usize) {
+    fn write_data(&mut self, run: &mut Vec<KVpair<K, V>>, offset: usize, len: usize) {
         // todo cover self.map to String
         unsafe {
             ptr::copy_nonoverlapping(
-                &self.map as *const KVpair<K, V>,
+                &self.map as *const Vec<KVpair<K, V>>,
                 run,
                 &self.filename.len() + offset,
             );
@@ -152,29 +152,9 @@ impl<'a, K, V> DiskRun<'a, K, V> {
     }
 
     fn construct_index(&mut self) {
-        /*
-                // construct fence pointers and write BF
-                //        _fencePointers.resize(0);
-                _fencePointers.reserve(_capacity / pageSize);
-                _iMaxFP = -1; // TODO IS THIS SAFE?
-                for (int j = 0; j < _capacity; j++) {
-                    bf.add((K*) &map[j].key, sizeof(K));
-                    if (j % pageSize == 0){
-                        _fencePointers.push_back(map[j].key);
-                        _iMaxFP++;
-                    }
-                }
-                if (_iMaxFP >= 0){
-                    _fencePointers.resize(_iMaxFP + 1);
-                }
-
-                minKey = map[0].key;
-                maxKey = map[_capacity - 1].key;
-        */
-        // self.fence_pointers.reverse(self.capacity / self.page_size as usize);
         self.fence_pointers.reverse();
 
-        let mut max_fp = -1;
+        let mut max_fp = 0;
         let mut j: usize = 0;
         while j < self.capacity {
             j += 1;
@@ -190,9 +170,8 @@ impl<'a, K, V> DiskRun<'a, K, V> {
             self.fence_pointers.resize(max_fp as usize + 1, None);
         }
 
-        // todo change map type to hash or vec , check cpp's type
-        self.min_key = map[0].key;
-        self.max_key = map[self.capacity - 1].key;
+       self.min_key = Some(self.map[0]);
+       self.max_key = Some(self.map[self.capacity - 1]);
     }
 
     fn binary_search(&mut self, offset: usize, n: usize, key: &K, found: bool) -> usize {
@@ -221,11 +200,56 @@ impl<'a, K, V> DiskRun<'a, K, V> {
         return min;
     }
 
-    fn get_flanking_fp(&mut self, start: &usize, end: &usize) {}
+    fn get_flanking_fp(&mut self, key: K, start: &usize, end: &usize) {
+        if self.imax_fp == 0 {
+            start = &(0 as usize);
+            end = &(self.capacity as usize);
+        } else if key < self.fence_pointers[1]{
+            // todo: impl Ord for K
+            start = &(0 as usize);
+            end = &(self.page_size as usize);
+        } else if key >= self.fence_pointers[self.imax_fp]{
+            start = &(self.imax_fp * self.page_size as usize);
+            end = &(self.capacity);
+        } else {
+            let mut min:usize = 0;
+            let mut max:usize = self.imax_fp;
+            while min < max {
+                let middle: usize = (min + max) >> 1;
+
+                if key > self.fence_pointers[middle]{
+                    if key < self.fence_pointers[middle + 1] {
+                        start = &(middle * self.page_size as usize);
+                        end = &((middle + 1) * self.page_size as usize);
+                        return
+                    }
+                    min = middle + 1;
+                }
+                else if key < self.fence_pointers[middle] {
+                    if key >= self.fence_pointers[middle - 1]{
+                        start = &((middle - 1) * self.page_size as usize);
+                        end = &(middle * self.page_size as usize);
+                        return
+                    }
+                    max = middle - 1;
+                }
+
+                else {
+                    start = &(middle * self.page_size as usize);
+                    end = start;
+                    return; 
+                }
+            }
+        }
+    }
 
     fn get_index(&mut self, key: &K, found: &bool) -> usize {
-        let i: usize = 1;
-        i
+        let mut start: usize;
+        let mut end: usize;
+        self.get_flanking_fp(*key, &start, &end);
+        let mut ret: usize = self.binary_search(start, end-start, key, *found);
+        ret
+
     }
 
     fn lookup(&self, key: &K, found: &bool) -> Option<&V> {
@@ -248,6 +272,10 @@ impl<'a, K, V> DiskRun<'a, K, V> {
     fn double_size(&mut self) {}
 }
 
+/*
+Todo: add lifetime params for DiskRun<K, V>
+
+*/
 impl<K, V> Drop for DiskRun<K, V> {
     #[inline]
     fn drop(&mut self) {

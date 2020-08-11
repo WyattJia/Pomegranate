@@ -253,7 +253,9 @@ impl<'a, K, V> DiskRun<'a, K, V> {
     }
 
     fn lookup(&self, key: &K, found: &bool) -> Option<&V> {
-        None
+        let mut idx: usize = self.get_index(key, found);
+        let ret: V = self.map[idx].value;
+        return found if ret != None;
     }
 
     fn range(&self, key1: &K, key2: &K, i1: &usize, i2: &usize) {}

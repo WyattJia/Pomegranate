@@ -21,7 +21,7 @@ pub struct DiskRun<'a, K: 'a, V: 'a> {
     pub page_size: isize,
     pub min_key: isize,
     pub max_key: isize,
-    pub map: HashMap<&'a str, KVpair<K, V>>,
+    pub map: Vec<KVpair<K, V>>,
 
     capacity: usize,
     filename: String,
@@ -76,12 +76,14 @@ impl<'a, K, V> DiskRun<'a, K, V> {
                 panic!("Could not access data from memory mapped file.")
             };
 
-            // ptr::copy_nonoverlapping(&_filename, map as *mut String, _filename.len());
 
-            let mut mut_map: &mut HashMap<KVpair<K, V>> = &mut *(c_void_map as *mut KVpair<K, V>);
+            let mut map = Vec::new();
+            let mut kv: &mut KVpair<K, V> = &mut *(c_void_map as *mut KVpair<K, V>);
 
+            // todo: fix insert Some(key) err.
+            map.push(*kv);
+            
             // todo get this fucking transmute_copy away.
-            let map = mem::transmute_copy(mut_map);
 
             /* Todo: review mmap usage.
             map = (KVPair<K, V>*) mmap(0, filesize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
@@ -179,7 +181,7 @@ impl<'a, K, V> DiskRun<'a, K, V> {
             // todo init bloom
             // self.bf.
             if j % (self.page_size as usize) == 0 {
-                self.fence_pointers.push(self.map[j].key);
+                self.fence_pointers.push(self.map.get(j).key);
                 max_fp += 1;
             }
         }

@@ -13,6 +13,7 @@ use std::ptr;
 use libc;
 use nix;
 use tempfile;
+use nix::unistd::close;
 
 use skiplist::run::KVpair;
 
@@ -332,9 +333,23 @@ impl<'a, K, V> DiskRun<'a, K, V> {
                 Err(why) => panic!("couldn't open {}: {}", display, why),
                 Ok(fd) => fd,
             };            
-    }
+    };
 
-    fn do_unmap(&mut self) {}
+}
+
+    fn do_unmap(&mut self) {
+        let filesize:usize = self.capacity * mem::size_of::<KVpair<K, V>>();
+
+        unsafe {
+            // todo: convert kvpair to ffi:c_void
+            if libc::munmap(self.map, filesize) == -1 {
+            panic!("Error unmmapping the file.");
+                       }
+
+            close(self.fd as i32).unwrap(); 
+            }
+        self.fd = -5;
+    }
 
     fn double_size(&mut self) {}
 }

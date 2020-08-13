@@ -267,7 +267,72 @@ impl<'a, K, V> DiskRun<'a, K, V> {
         }
     }
 
-    fn do_map(&mut self) {}
+    fn do_map(&mut self) {
+
+
+        let size = 1024 * 1024;
+        let mut f = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .open(&self.filename)
+            .expect("unable to open file.");
+
+        let filesize:usize = self.capacity * mem::size_of::<KVpair<K, V>>();
+
+        let tempdir = tempfile::tempdir().unwrap();
+        let fullpath = tempdir.path().join(self.filename);
+
+        let path = Path::new(&self.filename);
+        let display = path.display();
+
+        let fd = match nix::fcntl::open(
+                &fullpath,
+                nix::fcntl::OFlag::empty(),
+                nix::sys::stat::Mode::empty(),
+            ) {
+                Err(why) => panic!("couldn't open {}: {}", display, why),
+                Ok(fd) => fd,
+            };
+
+
+
+         unsafe {
+            let c_void_map = libc::mmap(
+                ptr::null_mut(),
+                size,
+                libc::PROT_READ | libc::PROT_WRITE,
+                libc::MAP_SHARED,
+                f.as_raw_fd(),
+                0,
+            );
+
+            if c_void_map == libc::MAP_FAILED {
+                panic!("Could not access data from memory mapped file.")
+            };
+
+
+            let mut map = Vec::new();
+            let mut kv: &mut KVpair<K, V> = &mut *(c_void_map as *mut KVpair<K, V>);
+
+            map.push(*kv);
+
+            let tempdir = tempfile::tempdir().unwrap();
+            let fullpath = tempdir.path().join(self.filename);
+            drop(File::create(&fullpath).unwrap());
+
+            let path = Path::new(&self.filename);
+            let display = path.display();
+
+            let fd = match nix::fcntl::open(
+                &fullpath,
+                nix::fcntl::OFlag::empty(),
+                nix::sys::stat::Mode::empty(),
+            ) {
+                Err(why) => panic!("couldn't open {}: {}", display, why),
+                Ok(fd) => fd,
+            };            
+    }
 
     fn do_unmap(&mut self) {}
 

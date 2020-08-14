@@ -1,3 +1,4 @@
+use std::fmt;
 use std::convert::TryInto;
 use std::fs::remove_file;
 use std::fs::File;
@@ -5,7 +6,6 @@ use std::fs::OpenOptions;
 use std::io::{Seek, SeekFrom, Write};
 use std::iter;
 use std::mem;
-use std::collections::HashMap;
 use std::os::unix::prelude::AsRawFd;
 use std::path::Path;
 use std::ptr;
@@ -175,10 +175,10 @@ impl<K, V> DiskRun<K, V> {
         let mut min = offset;
         let mut max = offset + n - 1;
         let mut middle = (min + max) >> 1;
-        while (min <= max) {
-            if (key > map[middle].key) {
+        while min <= max {
+            if key > self.map[middle].key {
                 min = middle + 1;
-            } else if (key == map[middle].key) {
+            } else if key == self.map[middle].key {
                 found = true;
                 return middle;
             } else {
@@ -252,6 +252,7 @@ impl<K, V> DiskRun<K, V> {
 
         let mut i1: usize = 0;
         let mut i2: usize = 0;
+        let mut found: bool;
         // todo impl PartialOrd for KVpair
         if key1 > self.max_key || key2 < self.min_key {
             return

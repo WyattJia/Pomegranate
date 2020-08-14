@@ -33,19 +33,8 @@ pub struct DiskRun<'a, K: 'a, V: 'a> {
     bf_fp: f64,
 }
 
-// impl <K: Ord, V: Ord> for DiskRun<K, V>
-// {
-//     fn compareKVs(&self, a: &KVpair<K, V>, b: &KVpair<K, V>) -> isize {
-//         /*
-//          * Compare KV pairs.
-//          */
-//         return 10
-//     }
-//
-//
-// }
 
-impl<'a, K, V> DiskRun<'a, K, V> {
+impl<K, V> DiskRun<K, V> {
     fn new(capacity: usize, page_size: usize, level: isize, run_id: isize, bf_fp: f32) -> Self {
         let size = 1024 * 1024;
         let _filename = "C_".to_owned() + &level.to_string() + "_" + &run_id.to_string() + ".txt";
@@ -259,14 +248,28 @@ impl<'a, K, V> DiskRun<'a, K, V> {
         return found if ret != None;
     }
 
-    fn range(&self, key1: &K, key2: &K, i1: &usize, i2: &usize) {}
+    fn range(&self, key1: &K, key2: &K, i1: &usize, i2: &usize) {
 
-    fn print_elts(&self) {
-        let mut j: usize = 0;
-        while j < self.capacity {
-            j += 1
+        let mut i1: usize = 0;
+        let mut i2: usize = 0;
+        // todo impl PartialOrd for KVpair
+        if key1 > self.max_key || key2 < self.min_key {
+            return
         }
+        if key1 >= self.min_key {
+            found = true;
+            i1 = self.get_index(key1, &found);
+        }
+        if key2 > self.max_key {
+            i2 = self.capacity;
+            return
+        } else {
+            found = false;
+            i2 = self.get_index(key2, &found)
+        }
+
     }
+
 
     fn do_map(&mut self) {
 
@@ -367,5 +370,22 @@ impl<K, V> Drop for DiskRun<K, V> {
         if let Err(e) = remove_file(&self.filename) {
             panic!("failed to remove file, maybe file race? {}", e);
         };
+    }
+}
+
+
+
+
+impl<K, V> fmt::Display for DiskRun<K, V>
+where
+    K: fmt::Display,
+    V: fmt::Display,
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if let (&Some(ref k), &Some(ref v)) = (&self.key, &self.value) {
+            write!(f, "({}, {})", k, v)
+        } else {
+            Ok(())
+        }
     }
 }

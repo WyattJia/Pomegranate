@@ -17,7 +17,7 @@ use nix::unistd::close;
 
 use skiplist::run::KVpair;
 
-pub struct DiskRun<'a, K: 'a, V: 'a> {
+pub struct DiskRun<K, V> {
     pub fd: isize,
     pub page_size: isize,
     pub min_key: Option<KVpair<K, V>>,

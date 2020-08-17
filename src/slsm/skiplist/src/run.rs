@@ -1,6 +1,7 @@
 use std::borrow::Borrow;
 use std::cmp::Ordering;
 use std::cmp::PartialEq;
+use std::cmp::PartialOrd;
 use std::marker::PhantomData;
 use std::ops::Bound;
 
@@ -42,19 +43,31 @@ impl<K: Eq, V: Eq> Eq for KVpair<K, V> {}
 
 impl<K, V> PartialOrd for KVpair<K, V>
 where
-    K: PartialOrd + PartialEq,
-    V: PartialOrd + PartialEq,
+    K: PartialOrd, 
+    V: PartialOrd, 
 {
+
+    // todo partial ord impl is wrong, check collection btree s impl and copy that.
+
+/*
+#[stable(feature = "rust1", since = "1.0.0")]                                    
+impl<K: PartialOrd, V: PartialOrd> PartialOrd for BTreeMap<K, V> {               
+    #[inline]                                                                    
+    fn partial_cmp(&self, other: &BTreeMap<K, V>) -> Option<Ordering> {          
+        self.iter().partial_cmp(other.iter())                                    
+    }                                                                            
+}   
+*/
     #[inline]
     fn partial_cmp(&self, other: &KVpair<K, V>) -> Option<Ordering> {
-        self.key.partial_cmp(&other.key)
+        self.key.unwrap().cmp(&other.key.unwrap())
     }
 
     #[inline]
     fn gt(&self, other: &KVpair<K, V>) -> bool {
         self.key > other.key
     }
-
+    
     #[inline]
     fn ge(&self, other: &KVpair<K, V>) -> bool {
         self.key >= other.key

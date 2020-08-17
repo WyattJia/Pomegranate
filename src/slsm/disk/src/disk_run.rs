@@ -9,6 +9,7 @@ use std::mem;
 use std::os::unix::prelude::AsRawFd;
 use std::path::Path;
 use std::ptr;
+use core::ffi;
 
 use libc;
 use nix;
@@ -27,7 +28,7 @@ pub struct DiskRun<K, V> {
     capacity: usize,
     filename: String,
     level: isize,
-    fence_pointers: Vec<Option<*mut K>>,
+    fence_pointers: Vec<Option<KVpair<K, V>>>,
     imax_fp: usize,
     run_id: usize,
     bf_fp: f64,
@@ -70,21 +71,8 @@ impl<K, V> DiskRun<K, V> {
             let mut map = Vec::new();
             let mut kv: &mut KVpair<K, V> = &mut *(c_void_map as *mut KVpair<K, V>);
 
-            // todo: fix insert Some(key) err.
             map.push(*kv);
             
-            // todo get this fucking transmute_copy away.
-
-            /* Todo: review mmap usage.
-            map = (KVPair<K, V>*) mmap(0, filesize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-
-            todo: update size of
-
-            todo: optimize unsafe code block
-
-            todo: return self
-
-            */
 
             let tempdir = tempfile::tempdir().unwrap();
             let fullpath = tempdir.path().join(&_filename);
@@ -151,12 +139,13 @@ impl<K, V> DiskRun<K, V> {
             // todo init bloom
             // self.bf.
             if j % (self.page_size as usize) == 0 {
-                self.fence_pointers.push(self.map.get(j).key);
+                self.fence_pointers.push(self.map.get(j).unwrap());
                 max_fp += 1;
             }
         }
 
         if max_fp >= 0 {
+            
             self.fence_pointers.resize(max_fp as usize + 1, None);
         }
 
@@ -164,7 +153,7 @@ impl<K, V> DiskRun<K, V> {
        self.max_key = Some(self.map[self.capacity - 1]);
     }
 
-    fn binary_search(&mut self, offset: usize, n: usize, key: &K, found: bool) -> usize {
+    fn binary_search(&mut self, offset: usize, n: usize, key: KVpair<K, V>, found: bool) -> usize {
         let min = offset;
 
         while n == 0 {
@@ -176,9 +165,9 @@ impl<K, V> DiskRun<K, V> {
         let mut max = offset + n - 1;
         let mut middle = (min + max) >> 1;
         while min <= max {
-            if key > self.map[middle].key {
+            if key > self.map[middle].unwrap() {
                 min = middle + 1;
-            } else if key == self.map[middle].key {
+            } else if key == self.map[middle].unwrap() {
                 found = true;
                 return middle;
             } else {
@@ -190,15 +179,15 @@ impl<K, V> DiskRun<K, V> {
         return min;
     }
 
-    fn get_flanking_fp(&mut self, key: K, start: &usize, end: &usize) {
+    fn get_flanking_fp(&mut self, key: KVpair<K, V>, start: &usize, end: &usize) {
         if self.imax_fp == 0 {
             start = &(0 as usize);
             end = &(self.capacity as usize);
-        } else if key < self.fence_pointers[1]{
+        } else if key < self.fence_pointers[1].unwrap(){
             // todo: impl Ord for K
             start = &(0 as usize);
             end = &(self.page_size as usize);
-        } else if key >= self.fence_pointers[self.imax_fp]{
+        } else if key >= self.fence_pointers[self.imax_fp].unwrap(){
             start = &(self.imax_fp * self.page_size as usize);
             end = &(self.capacity);
         } else {
@@ -208,7 +197,7 @@ impl<K, V> DiskRun<K, V> {
                 let middle: usize = (min + max) >> 1;
 
                 if key > self.fence_pointers[middle]{
-                    if key < self.fence_pointers[middle + 1] {
+                    if key < self.fence_pointers[middle + 1].unwrap() {
                         start = &(middle * self.page_size as usize);
                         end = &((middle + 1) * self.page_size as usize);
                         return
@@ -216,7 +205,7 @@ impl<K, V> DiskRun<K, V> {
                     min = middle + 1;
                 }
                 else if key < self.fence_pointers[middle] {
-                    if key >= self.fence_pointers[middle - 1]{
+                    if key >= self.fence_pointers[middle - 1].unwrap(){
                         start = &((middle - 1) * self.page_size as usize);
                         end = &(middle * self.page_size as usize);
                         return
@@ -233,7 +222,7 @@ impl<K, V> DiskRun<K, V> {
         }
     }
 
-    fn get_index(&mut self, key: &K, found: &bool) -> usize {
+    fn get_index(&mut self, key: KVpair<K, V>, found: &bool) -> usize {
         let mut start: usize;
         let mut end: usize;
         self.get_flanking_fp(*key, &start, &end);
@@ -242,26 +231,29 @@ impl<K, V> DiskRun<K, V> {
 
     }
 
-    fn lookup(&self, key: &K, found: &bool) -> Option<&V> {
+    fn lookup(&self, key: KVpair<K, V>, found: &bool) -> Option<&KVpair<K, V>> {
         let mut idx: usize = self.get_index(key, found);
-        let ret: V = self.map[idx].value;
-        return found if ret != None;
+        let ret: V = self.map[idx].unwrap();
+        if Some(ret) == true{
+            return ret 
+        }
+
     }
 
-    fn range(&self, key1: &K, key2: &K, i1: &usize, i2: &usize) {
+    fn range(&self, key1: KVpair<K, V>, key2: KVpair<K, V>, i1: &usize, i2: &usize) {
 
         let mut i1: usize = 0;
         let mut i2: usize = 0;
         let mut found: bool;
         // todo impl PartialOrd for KVpair
-        if key1 > self.max_key || key2 < self.min_key {
+        if key1 > self.max_key.unwrap() || key2 < self.min_key.unwrap() {
             return
         }
-        if key1 >= self.min_key {
+        if key1 >= self.min_key.unwrap() {
             found = true;
             i1 = self.get_index(key1, &found);
         }
-        if key2 > self.max_key {
+        if key2 > (self.max_key.unwrap()) {
             i2 = self.capacity;
             return
         } else {
@@ -345,8 +337,7 @@ impl<K, V> DiskRun<K, V> {
         let filesize:usize = self.capacity * mem::size_of::<KVpair<K, V>>();
 
         unsafe {
-            // todo: convert kvpair to ffi:c_void
-            if libc::munmap(self.map, filesize) == -1 {
+            if libc::munmap(&(self.map) as *mut libc::c_void) == -1 {
             panic!("Error unmmapping the file.");
                        }
 
@@ -358,10 +349,6 @@ impl<K, V> DiskRun<K, V> {
     fn double_size(&mut self) {}
 }
 
-/*
-Todo: add lifetime params for DiskRun<K, V>
-
-*/
 impl<K, V> Drop for DiskRun<K, V> {
     #[inline]
     fn drop(&mut self) {
@@ -383,10 +370,10 @@ where
     V: fmt::Display,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if let (&Some(ref k), &Some(ref v)) = (&self.key, &self.value) {
-            write!(f, "({}, {})", k, v)
-        } else {
-            Ok(())
-        }
+        // if let (&Some(ref K), &Some(ref V)) = (&self.min_key, &self.max_key) {
+            write!(f, "({}, {})", &self.min_key, &self.max_key)
+        // } else {
+            // Ok(())
+        // }
     }
 }

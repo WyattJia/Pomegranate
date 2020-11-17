@@ -1,6 +1,6 @@
 ![](./image/pomegranate.jpg)
 
-# Pomegranate()
+# Pomegranate(石榴)
 
 Pomegranate is a tiny and fast log-structured merge-tree written in Rust.
 

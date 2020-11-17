@@ -2,6 +2,9 @@
 
 # Pomegranate(石榴)
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+![travis-ci](https://travis-ci.com/wellls/Pomegranate.svg?branch=develop)
+
 Pomegranate is a tiny and fast log-structured merge-tree written in Rust.
 
 **Pomegranate is still under development.**

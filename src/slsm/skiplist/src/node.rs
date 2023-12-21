@@ -1,19 +1,19 @@
 use std::fmt;
 
 pub struct Node<K, V> {
-    key:   K,
-    value: V,
+    pub(crate) key:   K,
+    pub(crate) value: V,
     // forwards: vector of links to next node at the respective level.
     // this vector must be of length `self.level + 1`.
     // links[0] stores a pointer to the same node as next.
-    forwards: Vec<Option<Box<Node<K, V>>>>,
+    pub(crate) forwards: Vec<Option<Box<Node<K, V>>>>,
     prev: Option<Box<Node<K, V>>>,
     next: Option<Box<Node<K, V>>>,
     links_len: usize,
 }
 
 impl<K, V> Node<K, V> {
-    fn new(key: K, value: V, level: usize) -> Self {
+    pub(crate) fn new(key: K, value: V, level: usize) -> Self {
         Node {
             key,
             value,

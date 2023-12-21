@@ -114,7 +114,7 @@ where
             }
 
             if let Some(existing_node) = existing_node {
-                mem::replace(&mut (*existing_node).value, Some(value));
+                let _ = mem::replace(&mut (*existing_node).value, Some(value));
             } else {
                 let mut new_node = Box::new(Node::new(key, value, self.level_gen.random()));
                 let new_node_ptr: *mut Node<K, V> = mem::transmute_copy(&new_node);
@@ -235,34 +235,6 @@ where
         }
     }
 
-    fn find_key<Q: ?Sized>(&self, key: &Q) -> *const Node<K, V>
-    where
-        K: Borrow<Q>,
-        Q: Ord,
-    {
-        unsafe {
-            let mut node: *const Node<K, V> = mem::transmute_copy(&self.head);
-
-            let mut lvl = self.level_gen.total();
-            while lvl > 0 {
-                lvl -= 1;
-
-                while let Some(next) = (*node).forwards[lvl] {
-                    if let Some(ref next_key) = (*next).key {
-                        match next_key.borrow().cmp(key) {
-                            Ordering::Less => node = next,
-                            Ordering::Equal => return next,
-                            Ordering::Greater => break,
-                        }
-                    } else {
-                        panic!("Encountered a value-less node.");
-                    }
-                }
-            }
-            node
-        }
-    }
-
     fn lookup<Q: ?Sized>(&self, key: &Q) -> Option<&V>
     where
         K: Borrow<Q>,
@@ -294,12 +266,56 @@ where
         }
     }
 
+    fn find_key<Q: ?Sized>(&self, key: &Q) -> *const Node<K, V>
+    where
+        K: Borrow<Q>,
+        Q: Ord,
+    {
+        unsafe {
+            let mut node: *const Node<K, V> = mem::transmute_copy(&self.head);
+
+            let mut lvl = self.level_gen.total();
+            while lvl > 0 {
+                lvl -= 1;
+
+                while let Some(next) = (*node).forwards[lvl] {
+                    if let Some(ref next_key) = (*next).key {
+                        match next_key.borrow().cmp(key) {
+                            Ordering::Less => node = next,
+                            Ordering::Equal => return next,
+                            Ordering::Greater => break,
+                        }
+                    } else {
+                        panic!("Encountered a value-less node.");
+                    }
+                }
+            }
+            node
+        }
+    }
+
     fn num_elements(&self) -> i64 {
         return self.n;
     }
     fn set_size(&mut self, size: usize) {
         self.max_size = size;
     }
+    fn get_last(&self) -> *const Node<K, V> {
+        unsafe {
+            let mut node: *const Node<K, V> = mem::transmute_copy(&self.head);
+
+            let mut lvl = self.level_gen.total();
+            while lvl > 0 {
+                lvl -= 1;
+
+                while let Some(next) = (*node).forwards[lvl] {
+                    node = next;
+                }
+            }
+            node
+        }
+    }
+
     fn get_all(&mut self) -> Vec<KVpair<K, V>> {
         unsafe {
             let mut all: Vec<KVpair<K, V>> = Vec::with_capacity(self.level_gen.total());
@@ -334,7 +350,7 @@ where
                 let node_key   = mem::transmute_copy(&k);
                 let node_value = mem::transmute_copy(&v);
                 let kv = KVpair {
-                    key:   node_key, 
+                    key:   node_key,
                     value: node_value,
                 };
                 all.push(kv);
@@ -395,22 +411,6 @@ where
                     _lifetime_v: PhantomData,
                 },
             }
-        }
-    }
-
-    fn get_last(&self) -> *const Node<K, V> {
-        unsafe {
-            let mut node: *const Node<K, V> = mem::transmute_copy(&self.head);
-
-            let mut lvl = self.level_gen.total();
-            while lvl > 0 {
-                lvl -= 1;
-
-                while let Some(next) = (*node).forwards[lvl] {
-                    node = next;
-                }
-            }
-            node
         }
     }
 
@@ -508,7 +508,7 @@ impl<K, V> Drop for SkipList<K, V> {
             let node: *mut Node<K, V> = mem::transmute_copy(&self.head);
 
             while let Some(ref mut next) = (*node).next {
-                mem::replace(&mut (*node).next, mem::replace(&mut next.next, None));    
+                let _ = mem::replace(&mut (*node).next, mem::replace(&mut next.next, None));    
             }
         }    
     }

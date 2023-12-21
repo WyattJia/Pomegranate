@@ -71,7 +71,7 @@ impl<K, V> DiskRun<K, V> {
             let mut map = Vec::new();
             let mut kv: &mut KVpair<K, V> = &mut *(c_void_map as *mut KVpair<K, V>);
 
-            map.push(*kv);
+            map.push(kv);
             
 
             let tempdir = tempfile::tempdir().unwrap();
@@ -95,10 +95,10 @@ impl<K, V> DiskRun<K, V> {
                 filename: _filename,
                 min_key: None,
                 max_key: None,
-                map: map,
-                capacity: capacity,
+                map,
+                capacity,
                 page_size: page_size as isize,
-                level: level,
+                level,
                 fence_pointers: iter::repeat(None).take(level.try_into().unwrap()).collect(),
                 imax_fp: 0,
                 run_id: 0,
@@ -153,7 +153,7 @@ impl<K, V> DiskRun<K, V> {
        self.max_key = Some(self.map[self.capacity - 1]);
     }
 
-    fn binary_search(&mut self, offset: usize, n: usize, key: KVpair<K, V>, found: bool) -> usize {
+    fn binary_search(&mut self, offset: usize, n: usize, key: KVpair<K, V>, mut found: bool) -> usize {
         let min = offset;
 
         while n == 0 {
@@ -179,9 +179,10 @@ impl<K, V> DiskRun<K, V> {
         return min;
     }
 
-    fn get_flanking_fp(&mut self, key: KVpair<K, V>, start: &usize, end: &usize) {
+    fn get_flanking_fp(&mut self, key: KVpair<K, V>, start: &mut usize, end: &mut usize) {
         if self.imax_fp == 0 {
             start = &(0 as usize);
+            end = &(self.capacity as usize);
             end = &(self.capacity as usize);
         } else if key < self.fence_pointers[1].unwrap(){
             // todo: impl Ord for K
@@ -223,15 +224,15 @@ impl<K, V> DiskRun<K, V> {
     }
 
     fn get_index(&mut self, key: KVpair<K, V>, found: &bool) -> usize {
-        let mut start: usize;
-        let mut end: usize;
-        self.get_flanking_fp(*key, &start, &end);
+        let mut start: usize = 0;
+        let mut end: usize = 0;
+        self.get_flanking_fp(*key, &mut start, &mut end);
         let mut ret: usize = self.binary_search(start, end-start, key, *found);
         ret
 
     }
 
-    fn lookup(&self, key: KVpair<K, V>, found: &bool) -> Option<&KVpair<K, V>> {
+    fn lookup(&mut self, key: KVpair<K, V>, found: &bool) {
         let mut idx: usize = self.get_index(key, found);
         let ret: V = self.map[idx].unwrap();
         if Some(ret) == true{
@@ -240,7 +241,7 @@ impl<K, V> DiskRun<K, V> {
 
     }
 
-    fn range(&self, key1: KVpair<K, V>, key2: KVpair<K, V>, i1: &usize, i2: &usize) {
+    fn range(&mut self, key1: KVpair<K, V>, key2: KVpair<K, V>, i1: &usize, i2: &usize) {
 
         let mut i1: usize = 0;
         let mut i2: usize = 0;
@@ -312,7 +313,7 @@ impl<K, V> DiskRun<K, V> {
             let mut map = Vec::new();
             let mut kv: &mut KVpair<K, V> = &mut *(c_void_map as *mut KVpair<K, V>);
 
-            map.push(*kv);
+            map.push(kv);
 
             let tempdir = tempfile::tempdir().unwrap();
             let fullpath = tempdir.path().join(self.filename);
@@ -337,9 +338,9 @@ impl<K, V> DiskRun<K, V> {
         let filesize:usize = self.capacity * mem::size_of::<KVpair<K, V>>();
 
         unsafe {
-            if libc::munmap(&(self.map) as *mut libc::c_void) == -1 {
+            if libc::munmap(&(self.map) as *mut libc::c_void, 0) == -1 {
             panic!("Error unmmapping the file.");
-                       }
+            }
 
             close(self.fd as i32).unwrap(); 
             }
@@ -352,7 +353,7 @@ impl<K, V> DiskRun<K, V> {
 impl<K, V> Drop for DiskRun<K, V> {
     #[inline]
     fn drop(&mut self) {
-        nix::unistd::fsync(*&self.fd as i32);
+        nix::unistd::fsync(*&self.fd as i32).expect("TODO: panic message");
         &self.do_unmap();
 
         if let Err(e) = remove_file(&self.filename) {

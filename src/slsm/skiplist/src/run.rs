@@ -60,17 +60,7 @@ impl<K: PartialOrd, V: PartialOrd> PartialOrd for BTreeMap<K, V> {
 */
     #[inline]
     fn partial_cmp(&self, other: &KVpair<K, V>) -> Option<Ordering> {
-        self.key.unwrap().cmp(&other.key.unwrap())
-    }
-
-    #[inline]
-    fn gt(&self, other: &KVpair<K, V>) -> bool {
-        self.key > other.key
-    }
-    
-    #[inline]
-    fn ge(&self, other: &KVpair<K, V>) -> bool {
-        self.key >= other.key
+        Option::from(self.key.unwrap().cmp(&other.key.unwrap()))
     }
 
     #[inline]
@@ -81,6 +71,16 @@ impl<K: PartialOrd, V: PartialOrd> PartialOrd for BTreeMap<K, V> {
     #[inline]
     fn le(&self, other: &KVpair<K, V>) -> bool {
         self.key <= other.key
+    }
+
+    #[inline]
+    fn gt(&self, other: &KVpair<K, V>) -> bool {
+        self.key > other.key
+    }
+
+    #[inline]
+    fn ge(&self, other: &KVpair<K, V>) -> bool {
+        self.key >= other.key
     }
 }
 // Key value pair struct end

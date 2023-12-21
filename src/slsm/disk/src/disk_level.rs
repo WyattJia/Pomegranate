@@ -12,8 +12,8 @@ pub struct KVIntPairT<K, V> {
 
 pub struct DiskLevel<K, V> {
     tombstone:      isize,
-    KVINTPAIRTMAX:  isize,
-    KVPAIRMAX:      isize,
+    kvintpairtmax:  isize,
+    kvpairmax:      isize,
 
     pub level:      isize,
     pub page_size:  usize,

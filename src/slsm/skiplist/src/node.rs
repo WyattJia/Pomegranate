@@ -31,7 +31,7 @@ impl<K, V> Node<K, V> {
         Node {
             key: Some(key),
             value: Some(value),
-            max_level: max_level,
+            max_level,
             next: None,
             prev: None,
             forwards: iter::repeat(None).take(max_level + 1).collect(),

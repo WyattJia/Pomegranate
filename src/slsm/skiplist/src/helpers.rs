@@ -29,6 +29,10 @@ impl GeoLevelGenerator {
 }
 
 impl LevelGenerator for GeoLevelGenerator {
+    fn total(&self) -> usize {
+        self.total
+    }
+
     fn random(&mut self) -> usize {
         let mut h = 0;
         let mut x = self.p;
@@ -38,10 +42,6 @@ impl LevelGenerator for GeoLevelGenerator {
             x *= self.p
         }
         h
-    }
-
-    fn total(&self) -> usize {
-        self.total
     }
 }
 

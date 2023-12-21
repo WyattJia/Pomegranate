@@ -1,75 +1,59 @@
 use std::fmt;
-use std::iter;
 
 pub struct Node<K, V> {
-    pub key:   Option<K>,
-    pub value: Option<V>,
-    pub max_level: usize,
+    key:   K,
+    value: V,
     // forwards: vector of links to next node at the respective level.
     // this vector must be of length `self.level + 1`.
     // links[0] stores a pointer to the same node as next.
-    pub forwards: Vec<Option<*mut Node<K, V>>>,
-    pub prev: Option<*mut Node<K, V>>,
-    pub next: Option<Box<Node<K, V>>>,
-    pub links_len: Vec<usize>,
+    forwards: Vec<Option<Box<Node<K, V>>>>,
+    prev: Option<Box<Node<K, V>>>,
+    next: Option<Box<Node<K, V>>>,
+    links_len: usize,
 }
 
 impl<K, V> Node<K, V> {
-    pub fn head(max_level: usize) -> Self {
+    fn new(key: K, value: V, level: usize) -> Self {
         Node {
-            key:   None,
-            value: None,
-            next: None,
+            key,
+            value,
             prev: None,
-            max_level,
-            forwards: iter::repeat(None).take(max_level).collect(),
-            links_len: iter::repeat(0).take(max_level).collect(),
+            next: None,
+            forwards: vec![None; level],
+            links_len: level,
         }
     }
 
-    pub fn new(key: K, value: V, max_level: usize) -> Self {
+    pub fn head(level: usize) -> Self {
         Node {
-            key: Some(key),
-            value: Some(value),
-            max_level,
+            key:   Default::default(),
+            value: Default::default(),
             next: None,
             prev: None,
-            forwards: iter::repeat(None).take(max_level + 1).collect(),
-            links_len: iter::repeat(0).take(max_level).collect(),
+            forwards: vec![None; level],
+            links_len: level,
         }
     }
 
     pub fn is_header(&self) -> bool {
-        self.prev.is_none()
+        //Judge based on some specific conditions, such as checking whether key and value are default values
+        // The specific implementation here depends on the types of K and V
+        // For example, if both K and V implement PartialEq + Default, it can be judged like this:
+        self.key == Default::default() && self.value == Default::default()
+
     }
 
-    pub fn into_inner(self) -> Option<(K, V)> {
-        if self.key.is_some() {
-            Some((self.key.unwrap(), self.value.unwrap()))
-        } else {
-            None
-        }
+    pub fn into_inner(self) -> (K, V) {
+        (self.key, self.value)
     }
 }
 
 impl<K, V> fmt::Display for Node<K, V>
-where
-    K: fmt::Display,
-    V: fmt::Display,
+    where
+        K: fmt::Display,
+        V: fmt::Display,
 {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if let (&Some(ref k), &Some(ref v)) = (&self.key, &self.value) {
-            write!(f, "({}, {})", k, v)
-        } else {
-            Ok(())
-        }
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Node(Key: {}, Value: {})", self.key, self.value)
     }
 }
-
-// impl<K, V> Clone for Node<K, V> {
-//     fn clone(&self) -> Node<K, V> {
-//         match self {
-
-//         }
-//     }
-// }
